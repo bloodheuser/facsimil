@@ -1,0 +1,167 @@
+:root{
+  --bg:#f3f6fb;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --accent:#2563eb;
+  --accent-2:#10b981;
+  --shadow: 0 8px 24px rgba(15,23,42,0.06);
+  --radius:12px;
+  --glass: rgba(255,255,255,0.85);
+}
+
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:var(--bg); color:#0f172a}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+
+/* Topbar */
+.topbar{background:linear-gradient(90deg,var(--accent),#1e40af);color:white;padding:18px 0;box-shadow:0 6px 18px rgba(15,23,42,0.08)}
+
+.topbar .container{display:flex;align-items:center;justify-content:space-between}
+
+.brand h1{margin:0;font-size:18px}
+
+.brand .subtitle{font-size:13px;opacity:0.9}
+
+.user{display:flex;align-items:center;gap:12px}
+
+.avatar{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,0.18)}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:260px 1fr;gap:18px;margin-top:18px}
+
+.sidebar.card{padding:16px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);height:fit-content}
+
+.sidebar ul{list-style:none;padding:0;margin:0}
+
+.sidebar li{padding:8px 10px;border-radius:8px;margin-bottom:6px;cursor:pointer}
+
+.sidebar li.active, .sidebar li.current{background:#f1f5f9;color:#0f172a;font-weight:600}
+
+/* Menu preguntas */
+.main-area .card{padding:16px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)}
+
+.tabs{display:flex;gap:8px;margin-bottom:12px}
+
+.tab{padding:8px 12px;border-radius:10px;border:1px solid #eef2f7;background:#f8fafc;cursor:pointer;font-weight:600}
+
+.tab.active{background:var(--accent);color:white;border-color:var(--accent)}
+
+.content-area{display:flex;flex-direction:column;gap:12px}
+
+/* Group card */
+.group{background:linear-gradient(180deg,#ffffff,#fbfdff);border:1px solid #eef2f7;padding:12px;border-radius:12px}
+
+.group h3{margin:0 0 8px 0;font-size:15px;color:#0f172a}
+
+.item{display:grid;grid-template-columns:1fr 220px 220px;gap:12px;align-items:start;padding:10px;border-radius:10px;border:1px solid transparent}
+
+.item + .item{margin-top:8px}
+
+.item .question{font-weight:600}
+
+.evidence-hint{font-size:12px;color:var(--muted);margin-top:6px}
+
+/* Inputs */
+.radio-row{display:flex;gap:12px;align-items:center}
+
+.radio-row input{transform:scale(1.05)}
+
+.evidence-input{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef7}
+
+.file-input{display:block;margin-top:6px;font-size:13px}
+
+/* controls footer */
+.controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:12px}
+
+.score-box{font-weight:600}
+
+.muted{color:var(--muted)}
+
+.buttons{display:flex;gap:8px}
+
+.btn{padding:8px 12px;border-radius:10px;border:1px solid #e6eef7;background:white;cursor:pointer}
+
+.btn.primary{background:var(--accent);color:white;border-color:transparent}
+
+.validation-messages{margin-top:10px;color:#b91c1c;font-weight:600}
+
+/* small responsiveness */
+@media (max-width:980px){
+  .layout{grid-template-columns:1fr; padding-bottom:24px}
+  .item{grid-template-columns:1fr 1fr; }
+  .item .file-col{grid-column:1/-1}
+}
+/* Estilos para las preguntas */
+.question {
+  background: linear-gradient(135deg, #c2c2c2, #f7f9fc); /* degradado suave */
+  padding: 20px;
+  margin-bottom: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border: 1px solid #e0e0e0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Efecto al pasar el mouse */
+.question:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+
+
+/* Radios ocultos */
+.radio-row input[type="radio"] {
+  display: none; /* ocultamos el circulito */
+}
+
+.radio-row label {
+  display: inline-block;
+  padding: 10px 18px;
+  margin: 5px;
+  border-radius: 8px;
+  font-weight: 600;
+  border: 2px solid transparent;
+  cursor: pointer;
+  background: #c2c2c2;   /* gris clarito de base */
+  color: #374151;
+  transition: all 0.3s ease;
+}
+
+
+/* Si está seleccionado (fondo verde) */
+input[type="radio"][value="1"]:checked + label {
+  background: #10b981;
+  color: white;
+  border-color: #059669;
+}
+
+/* Si está seleccionado (fondo rojo) */
+input[type="radio"][value="0"]:checked + label {
+  background: #ef4444;
+  color: white;
+  border-color: #b91c1c;
+}
+.evidence-input {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.evidence-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #eef2ff;
+}
+/* Fondo general para cada grupo */
+.group {
+  padding: 16px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+
+
+

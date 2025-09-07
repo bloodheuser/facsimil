@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Facsímil Autoevaluación — Juntas de Vecinos</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="container">
+      <div class="brand">
+        <h1>Facsímil — Autoevaluación</h1>
+        <div class="subtitle">Gestión comunitaria · Ley 19.418</div>
+      </div>
+      <div class="user">
+        <div class="user-name">Usuario</div>
+        <div class="avatar"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container layout">
+    <!-- Sidebar -->
+    <aside class="sidebar card">
+      <nav>
+        <ul>
+          <li class="active">Principal</li>
+          <li>Usuarios</li>
+          <li class="current">Facsímil</li>
+          <li>Listado</li>
+        </ul>
+      </nav>
+      <div class="info">
+        <strong>Instrucciones</strong>
+        <p>Responde Sí/No en cada pregunta y registra la evidencia (acta, estatuto, informe).</p>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main-area">
+      <div class="card">
+        <!-- tabs -->
+        <div class="tabs">
+          <button class="tab active" data-tab="transparencia">Transparencia</button>
+          <button class="tab" data-tab="rendicion">Rendición de Cuentas</button>
+          <button class="tab" data-tab="participacion">Participación Ciudadana</button>
+          <button class="tab" data-tab="colaboracion">Colaboración e Innovación</button>
+        </div>
+
+        <div id="content-area" class="content-area">
+          <!-- seccion renderizada por JS -->
+        </div>
+
+        <!-- footer controls -->
+        <div class="controls">
+          <div class="score-box">
+            <div>Puntaje: <strong id="score">0</strong> / <span id="maxScore">0</span></div>
+            <div class="muted">Caracterización: <span id="level">-</span></div>
+          </div>
+
+          <div class="buttons">
+            <button id="validateBtn" class="btn">Validar evidencias</button>
+            <button id="saveJson" class="btn primary">Guardar JSON</button>
+            <button id="exportCsv" class="btn">Exportar CSV</button>
+            <button id="resetBtn" class="btn">Reiniciar</button>
+          </div>
+        </div>
+
+        <div id="validationMessages" class="validation-messages"></div>
+      </div>
+    </main>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <small> (Ley 19.418)</small>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
