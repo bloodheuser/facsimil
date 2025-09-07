@@ -155,13 +155,7 @@ input[type="radio"][value="0"]:checked + label {
   border-color: var(--accent);
   background: #eef2ff;
 }
-/* Fondo general para cada grupo */
-.group {
-  padding: 16px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  box-shadow: var(--shadow);
-}
+
 
 
 
