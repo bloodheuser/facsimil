@@ -1,5 +1,4 @@
-
-/* Estructura: sections -> groups -> items {q, evidencia} */
+/* ======= Estructura de datos ======= */
 const sections = [
   {
     key: "transparencia",
@@ -93,178 +92,234 @@ const sections = [
   }
 ];
 
-/* Rendering & logic */
+/* ======= Referencias DOM ======= */
 const contentArea = document.getElementById('content-area');
-const scoreEl = document.getElementById('score');
-const maxScoreEl = document.getElementById('maxScore');
-const levelEl = document.getElementById('level');
 const validationMessages = document.getElementById('validationMessages');
+const saveMenu = document.getElementById('saveMenu');
+const saveBtn = document.getElementById('saveBtn');
 
+/* ======= Estado ======= */
 let totalQuestions = 0;
 let answers = {}; // key -> {value: 0|1|null, evidence: string, files: [names]}
+const ID_USUARIO_ACTUAL = 1; // reemplaza dinámicamente si corresponde
 
-/* */
-function keyFor(sectionKey, gi, ii) {
-  return `${sectionKey}-${gi}-${ii}`;
+function computeScore(){
+  return Object.values(answers).reduce((acc, v) => acc + (v.value === 1 ? 1 : 0), 0);
 }
 
-/* Build UI */
-function buildUI() {
+
+/* ======= Helpers ======= */
+function keyFor(sectionKey, gi, ii){ return `${sectionKey}-${gi}-${ii}`; }
+
+/* ======= Construcción de UI ======= */
+function buildUI(){
   contentArea.innerHTML = '';
   totalQuestions = 0;
+
   sections.forEach(section => {
     const sectionWrap = document.createElement('div');
     sectionWrap.className = 'section-wrap';
-    sectionWrap.style.display = 'none'; // oculto por defecto
+    sectionWrap.style.display = 'none';
+
     const title = document.createElement('h2');
     title.textContent = section.title;
-    title.style.marginBottom = '8px';
     sectionWrap.appendChild(title);
-    
+
     section.groups.forEach((g, gi) => {
-      const groupCard = document.createElement('div');
-      groupCard.className = 'group';
+      const gEl = document.createElement('div');
+      gEl.className = 'group';
+
       const hg = document.createElement('h3');
       hg.textContent = g.group;
-      groupCard.appendChild(hg);
+      gEl.appendChild(hg);
 
-      g.items.forEach((item, ii) => {
+      g.items.forEach((it, ii) => {
         const k = keyFor(section.key, gi, ii);
         totalQuestions++;
+        if(!answers[k]) answers[k] = { value:null, evidence:'', files:[] };
 
-        // initialize answer state
-        if (!answers[k]) answers[k] = {value: null, evidence: '', files: []};
+        const row = document.createElement('div');
+        row.className = 'item';
 
-        const itemRow = document.createElement('div');
-        itemRow.className = 'item';
-        // question column
-        const qDiv = document.createElement('div');
-        qDiv.innerHTML = `<div class="question">${item.q}</div>
-                          <div class="evidence-hint">Evidencia sugerida: ${item.evidencia}</div>`;
+        const left = document.createElement('div');
+        left.innerHTML = `
+          <div class="question">${it.q}</div>
+          <div class="evidence-hint">Evidencia sugerida: ${it.evidencia}</div>
+        `;
 
-        // radios column
-        const radioDiv = document.createElement('div');
-        radioDiv.className = 'radio-col';
-        radioDiv.innerHTML = `
-        <div class="radio-row">
-          <input type="radio" id="${k}-si" name="${k}" value="1">
-          <label for="${k}-si">Sí</label>
+        const right = document.createElement('div');
+        right.className = 'yn';
+        right.innerHTML = `
+          <div class="radio">
+            <input type="radio" id="${k}-si" name="${k}" value="1" />
+            <label for="${k}-si">Si</label>
+          </div>
+          <div class="radio">
+            <input type="radio" id="${k}-no" name="${k}" value="0" />
+            <label for="${k}-no">No</label>
+          </div>
+        `;
 
-          <input type="radio" id="${k}-no" name="${k}" value="0">
-          <label for="${k}-no">No</label>
-        </div>
-      `;
+        row.appendChild(left);
+        row.appendChild(right);
 
-        // evidence column
-        const fileDiv = document.createElement('div');
-        fileDiv.className = 'file-col';
-        fileDiv.innerHTML = `
-          <input type="text" class="evidence-input" placeholder="Referencia a evidencia (ej. Acta N°3, marzo 2023)" data-key="${k}">
+        const filecol = document.createElement('div');
+        filecol.className = 'filecol';
+        filecol.innerHTML = `
+          <input type="text" class="evidence-input"
+                 placeholder="Referencia a evidencia (ej. Acta N°3, marzo 2023)"
+                 data-key="${k}">
           <input type="file" class="file-input" data-key="${k}" multiple>
         `;
 
-        itemRow.appendChild(qDiv);
-        itemRow.appendChild(radioDiv);
-        itemRow.appendChild(fileDiv);
-        groupCard.appendChild(itemRow);
+        const wrap = document.createElement('div');
+        wrap.appendChild(row);
+        wrap.appendChild(filecol);
+        gEl.appendChild(wrap);
 
-        // event listeners
-        radioDiv.querySelectorAll('input[type=radio]').forEach(r => {
-          r.addEventListener('change', (e) => {
-            answers[k].value = parseInt(e.target.value, 10);
+        // Radios
+        right.querySelectorAll('input[type=radio]').forEach(r => {
+          r.addEventListener('change',(e)=>{
+            answers[k].value = parseInt(e.target.value,10);
             updateScore();
-            const evInput = document.querySelector(`.evidence-input[data-key="${k}"]`);
-            if (answers[k].value === 1 && !evInput.value.trim()) {
-              evInput.style.borderColor = '#f97316';
+
+            const ev = filecol.querySelector('.evidence-input');
+            if (answers[k].value === 1) {
+              filecol.classList.add('active');
+              ev.style.borderColor = (!ev.value.trim()) ? '#f59e0b' : 'var(--border)';
             } else {
-              evInput.style.borderColor = '#e6eef7';
+              filecol.classList.remove('active');
+              ev.value = '';
+              answers[k].evidence = '';
+              answers[k].files = [];
             }
 
-            // ⬇️ Enviar automáticamente al backend
-            enviarRespuesta(1, k, answers[k].value, answers[k].evidence, answers[k].files);
-            });
+            enviarRespuesta(ID_USUARIO_ACTUAL, k, answers[k].value, answers[k].evidence, answers[k].files);
           });
+        });
 
-          const evInput = fileDiv.querySelector('.evidence-input');
-          evInput.addEventListener('input', (e) => {
-            answers[k].evidence = e.target.value.trim();
+        const evInput = filecol.querySelector('.evidence-input');
+        evInput.addEventListener('input',(e)=>{
+          answers[k].evidence = e.target.value.trim();
+          enviarRespuesta(ID_USUARIO_ACTUAL, k, answers[k].value, answers[k].evidence, answers[k].files);
+        });
 
-            // ⬇ Guardar en BD cuando se agrega evidencia
-            enviarRespuesta(1, k, answers[k].value, answers[k].evidence, answers[k].files);
-          });
-
-          const finput = fileDiv.querySelector('.file-input');
-          finput.addEventListener('change', (e) => {
-            const names = Array.from(e.target.files).map(f => f.name);
-            answers[k].files = names;
-
-            // ⬇️ Guardar en BD cuando se suben archivos
-            enviarRespuesta(1, k, answers[k].value, answers[k].evidence, answers[k].files);
+        const fInput = filecol.querySelector('.file-input');
+        fInput.addEventListener('change',(e)=>{
+          const names = Array.from(e.target.files).map(f=>f.name);
+          answers[k].files = names;
+          enviarRespuesta(ID_USUARIO_ACTUAL, k, answers[k].value, answers[k].evidence, answers[k].files);
         });
       });
 
-      sectionWrap.appendChild(groupCard);
+      sectionWrap.appendChild(gEl);
     });
 
     contentArea.appendChild(sectionWrap);
   });
 
-  maxScoreEl.textContent = totalQuestions;
+  // Inicializa el dock flotante al construir la UI:
   updateScore();
+
+  // 👇 Muy importante: mostrar la sección que corresponde al tab activo
+  showSectionByActiveTab();
 }
 
-/* Calculate score & level */
-function updateScore() {
-  const vals = Object.values(answers);
-  const score = vals.reduce((acc, v) => acc + (v.value === 1 ? 1 : 0), 0);
-  scoreEl.textContent = score;
-  levelEl.textContent = levelFromScore(score);
+
+/* ======= Puntaje y niveles ======= */
+function updateScore(){
+  const score = computeScore();
+
+  // === Dock flotante ===
+  const sdScore = document.getElementById('sdScore');
+  const sdMax = document.getElementById('sdMax');
+  const sdLevel = document.getElementById('sdLevel');
+  const sdBar = document.getElementById('sdBar');
+
+  if (sdScore && sdMax && sdLevel && sdBar){
+    sdScore.textContent = score;
+    sdMax.textContent = totalQuestions;
+    sdLevel.textContent = levelFromScore(score);
+    const pct = totalQuestions ? Math.round((score / totalQuestions) * 100) : 0;
+    sdBar.style.width = pct + '%';
+  }
 }
 
-/* Level logic */
-function levelFromScore(score) {
-  if (score <= 12) return "Nivel Inicial";
-  if (score <= 24) return "Nivel Intermedio";
-  return "Nivel Avanzado (Reconocimiento Público)";
+
+function levelFromScore(score){
+  if(score <= 12) return 'Nivel Inicial';
+  if(score <= 24) return 'Nivel Intermedio';
+  return 'Nivel Avanzado (Reconocimiento Público)';
 }
 
-/* Validation routine: check for questions answered with 'Sí' and missing evidence */
-function runValidation() {
+/* ======= Validación =======
+   - Requiere que TODAS las preguntas tengan Sí/No.
+   - Requiere evidencia cuando la respuesta es Sí.
+*/
+function runValidation(){
   validationMessages.innerHTML = '';
-  const missing = [];
-  for (const [k, v] of Object.entries(answers)) {
-    if (v.value === 1) {
-      if (!v.evidence || v.evidence.trim() === '') {
-        missing.push(k);
-        const el = document.querySelector(`.evidence-input[data-key="${k}"]`);
-        if (el) el.style.borderColor = '#dc2626';
+
+  let unanswered = 0;
+  let missingEvidence = 0;
+
+  // limpiar warnings de grupos
+  document.querySelectorAll('.group').forEach(g => g.classList.remove('warn'));
+
+  sections.forEach((section, si)=>{
+    section.groups.forEach((g, gi)=>{
+      let groupHasUnanswered = false;
+      g.items.forEach((it, ii)=>{
+        const k = keyFor(section.key, gi, ii);
+        const v = answers[k] || {};
+        // sin respuesta
+        if(v.value !== 0 && v.value !== 1){
+          unanswered++;
+          groupHasUnanswered = true;
+        }
+        // sí sin evidencia
+        if(v.value === 1 && (!v.evidence || v.evidence.trim()==='')){
+          missingEvidence++;
+          const el = document.querySelector(`.evidence-input[data-key="${k}"]`);
+          if(el) el.style.borderColor = '#dc2626';
+        }
+      });
+      if(groupHasUnanswered){
+        const groups = document.querySelectorAll('.group');
+        const idx = Array.from(groups).findIndex((el)=> el.querySelector('h3')?.textContent === g.group);
+        if(idx > -1) groups[idx].classList.add('warn');
       }
-    }
-  }
-  if (missing.length === 0) {
-    validationMessages.style.color = '#065f46';
-    validationMessages.textContent = 'Validación OK — todas las respuestas "Sí" tienen referencia de evidencia.';
-  } else {
+    });
+  });
+
+  if(unanswered > 0 || missingEvidence > 0){
     validationMessages.style.color = '#b91c1c';
-    validationMessages.textContent = `Faltan referencias de evidencia para ${missing.length} items. Se resalto en rojo los campos faltantes.`;
+    const parts = [];
+    if(unanswered > 0) parts.push(`Hay ${unanswered} pregunta(s) sin responder. Selecciona “Sí” o “No”.`);
+    if(missingEvidence > 0) parts.push(`Hay ${missingEvidence} respuesta(s) “Sí” sin evidencia.`);
+    validationMessages.textContent = parts.join(' ');
+    return false;
+  } else {
+    validationMessages.style.color = '#065f46';
+    validationMessages.textContent = 'Validación OK — todas las preguntas tienen respuesta y las “Sí” tienen evidencia.';
+    return true;
   }
 }
 
-/*  JSON */
-function saveJSON() {
+/* ======= Exportar JSON ======= */
+function saveJSON(){
   const payload = {
     generatedAt: new Date().toISOString(),
     totalQuestions,
     summary: {
-      score: parseInt(scoreEl.textContent, 10),
-      level: levelEl.textContent
+      score: computeScore(),
+      level: levelFromScore(computeScore())
     },
     answers: {}
   };
-  for (const [k, v] of Object.entries(answers)) {
+  for(const [k,v] of Object.entries(answers)){
     payload.answers[k] = { value: v.value, evidence: v.evidence || '', files: v.files || [] };
   }
-  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -273,14 +328,13 @@ function saveJSON() {
   URL.revokeObjectURL(url);
 }
 
-/* CSV */
-function exportCSV() {
+/* ======= Exportar CSV ======= */
+function exportCSV(){
   const header = ['item','seccion','grupo','pregunta','respuesta','evidencia','archivos'];
   const lines = [header.join(',')];
-  // Need to map keys back to readable fields: iterate sections/groups/items
-  sections.forEach(section => {
-    section.groups.forEach((g, gi) => {
-      g.items.forEach((it, ii) => {
+  sections.forEach(section=>{
+    section.groups.forEach((g,gi)=>{
+      g.items.forEach((it,ii)=>{
         const k = keyFor(section.key, gi, ii);
         const a = answers[k] || {};
         const row = [
@@ -288,16 +342,16 @@ function exportCSV() {
           `"${section.title}"`,
           `"${g.group}"`,
           `"${it.q.replace(/"/g,'""')}"`,
-          (a.value === 1 ? 'Si' : a.value === 0 ? 'No' : ''),
-          `"${(a.evidence || '').replace(/"/g,'""')}"`,
-          `"${(a.files || []).join(';').replace(/"/g,'""')}"`
+          (a.value===1 ? 'Si' : a.value===0 ? 'No' : ''),
+          `"${(a.evidence||'').replace(/"/g,'""')}"`,
+          `"${(a.files||[]).join(';').replace(/"/g,'""')}"`
         ];
         lines.push(row.join(','));
       });
     });
   });
   const csv = lines.join('\n');
-  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -306,77 +360,125 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
-/* Reset form */
-function resetAll() {
-  // clear inputs and state
+/* ======= Reset ======= */
+function resetAll(){
   answers = {};
+  // Activa el primer tab visualmente
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach((t,i)=> t.classList.toggle('active', i === 0));
+
+  // Reconstruye el contenido
   buildUI();
+
+  // Limpia mensajes y cierra menú guardar si estaba abierto
   validationMessages.textContent = '';
+  if (saveMenu) saveMenu.classList.remove('open');
+
+  // Asegura mostrar sección del tab activo
+  showSectionByActiveTab();
+
+  // Sube arriba
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* Tabs con secciones dinámicas */
-function setupTabs() {
-  document.querySelectorAll('.tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      // desactivar todas las tabs
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+
+/* ======= Tabs ======= */
+function setupTabs(){
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       btn.classList.add('active');
 
-      // ocultar todas las secciones
-      document.querySelectorAll('.section-wrap').forEach(sec => sec.style.display = 'none');
+      document.querySelectorAll('.section-wrap').forEach(sec => sec.style.display='none');
 
-      // mostrar solo la seleccionada
       const key = btn.getAttribute('data-tab');
       const sectionIndex = sections.findIndex(s => s.key === key);
-      if (sectionIndex >= 0) {
+      if(sectionIndex >= 0){
         const sectionEl = document.querySelectorAll('.section-wrap')[sectionIndex];
-        if (sectionEl) sectionEl.style.display = 'block';
+        if(sectionEl) sectionEl.style.display = 'block';
       }
     });
   });
 
-  // mostrar por defecto la primera sección
-  document.querySelectorAll('.section-wrap').forEach((sec, i) => {
-    sec.style.display = i === 0 ? 'block' : 'none';
+  // mostrar primera sección por defecto
+  document.querySelectorAll('.section-wrap').forEach((sec,i)=>{
+    sec.style.display = i===0 ? 'block' : 'none';
   });
 }
 
-
-/* Init */
-buildUI();
-setupTabs();
-
-/* Buttons */
-document.getElementById('validateBtn').addEventListener('click', runValidation);
-document.getElementById('saveJson').addEventListener('click', saveJSON);
-document.getElementById('exportCsv').addEventListener('click', exportCSV);
-document.getElementById('resetBtn').addEventListener('click', () => {
-  if (confirm('¿Reiniciar todas las respuestas?')) resetAll();
-});
-
-// Enviar al backend
-function enviarRespuesta(idUsuario, idPregunta, respuesta, evidencia, archivos) {
-  fetch("http://localhost:3001/api/respuestas", {   // 👈 agrega /api
+/* ======= Backend (autosave por cambio) ======= */
+function enviarRespuesta(idUsuario, idPregunta, respuesta, evidencia, archivos){
+  fetch("http://localhost:3001/api/respuestas", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       id_usuario: idUsuario,
       id_pregunta: idPregunta,
       respuesta,
       evidencia,
-      archivos: archivos.join(",")
+      archivos: (archivos || []).join(",")
     })
   })
   .then(res => res.json())
-  .then(data => {
-    console.log("Guardado en la BD:", data);
-  })
+  .then(data => console.log("Guardado en la BD:", data))
   .catch(err => console.error("Error al guardar:", err));
 }
-const ID_USUARIO_ACTUAL = 1; //  usuario de prueba fijo
 
-// Y cuando llames a enviarRespuesta:
-enviarRespuesta(ID_USUARIO_ACTUAL, k, answers[k].value, answers[k].evidence, answers[k].files);
+/* ======= Init ======= */
+buildUI();
+setupTabs();
 
+/* ======= Botones ======= */
+document.getElementById('cancelBtn').addEventListener('click', ()=>{
+  if(confirm('¿Cancelar y limpiar el formulario?')) resetAll();
+});
+
+/* Guardar: validar -> abrir menú de opciones (JSON/CSV) */
+saveBtn.addEventListener('click', ()=>{
+  const ok = runValidation();
+  if(!ok){
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  saveMenu.classList.toggle('open');
+  saveMenu.setAttribute('aria-hidden', !saveMenu.classList.contains('open'));
+});
+
+/* Acciones del menú */
+document.getElementById('saveJson').addEventListener('click', ()=>{
+  saveJSON();
+  saveMenu.classList.remove('open');
+});
+document.getElementById('exportCsv').addEventListener('click', ()=>{
+  exportCSV();
+  saveMenu.classList.remove('open');
+});
+
+/* Cerrar menú al clickear fuera */
+document.addEventListener('click', (e)=>{
+  if(!saveMenu.contains(e.target) && e.target !== saveBtn){
+    saveMenu.classList.remove('open');
+  }
+});
+function showFirstSection() {
+  const wraps = document.querySelectorAll('.section-wrap');
+  wraps.forEach((sec, i) => sec.style.display = i === 0 ? 'block' : 'none');
+}
+function showSectionByActiveTab(){
+  const wraps = document.querySelectorAll('.section-wrap');
+  // Oculta todas las secciones
+  wraps.forEach(sec => sec.style.display = 'none');
+
+  // Usa el tab activo; si no hay, usa el primero
+  const activeTab = document.querySelector('.tab.active') || document.querySelector('.tab');
+  if(!activeTab){
+    // si no hay tabs por algun motivo, muestra la primera sección
+    if(wraps[0]) wraps[0].style.display = 'block';
+    return;
+  }
+
+  const key = activeTab.getAttribute('data-tab');
+  const idx = sections.findIndex(s => s.key === key);
+  const sectionEl = (idx >= 0) ? wraps[idx] : wraps[0];
+  if(sectionEl) sectionEl.style.display = 'block';
+}

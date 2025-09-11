@@ -3,80 +3,177 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Facsímil Autoevaluación — Juntas de Vecinos</title>
+  <title>Facsimil Autoevaluación — Juntas de Vecinos</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="container">
-      <div class="brand">
-        <h1>Facsímil — Autoevaluación</h1>
-        <div class="subtitle">Gestión comunitaria · Ley 19.418</div>
-      </div>
-      <div class="user">
-        <div class="user-name">Usuario</div>
-        <div class="avatar"></div>
-      </div>
-    </div>
-  </header>
+      <!-- TOPBAR -->
+      <header class="topbar">
+        <div class="wrap topwrap">
+          <div class="brand-left">
+            <div class="brand-title">Facsimil</div>
+          </div>
 
-  <div class="container layout">
-    <!-- Sidebar -->
-    <aside class="sidebar card">
-      <nav>
-        <ul>
-          <li class="active">Principal</li>
-          <li>Usuarios</li>
-          <li class="current">Facsímil</li>
-          <li>Listado</li>
-        </ul>
-      </nav>
-      <div class="info">
-        <strong>Instrucciones</strong>
-        <p>Responde Sí/No en cada pregunta y registra la evidencia (acta, estatuto, informe).</p>
+          <div class="rightblock">
+            <div class="right-row">
+              <!-- Campanita -->
+              <button class="bell" title="Notificaciones">
+                <svg viewBox="0 0 24 24" class="icon">
+                  <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0"
+                        fill="none" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </button>
+
+              <!-- Chip USER -->
+              <div class="userchip">
+                <span class="user-dot"></span>
+                <span class="user-label">USER</span>
+                <svg class="caret" viewBox="0 0 24 24">
+                  <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Nombre organización -->
+            <div class="orgname">Organización Comunitaria</div>
+          </div>
+        </div>
+      </header>
+
+
+
+  <!-- LAYOUT: Sidebar izquierda + Main derecha -->
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="welcome">Bienvenido</div>
+
+        <!-- Uploader/preview de avatar -->
+        <label class="avatar-uploader" title="Subir foto de usuario">
+          <input type="file" id="avatarInput" accept="image/*" hidden />
+          <div class="avatar-lg" id="avatarPreview"></div>
+        </label>
       </div>
+
+      <!-- HOME -->
+      <h3>Home</h3>
+      <nav class="nav">
+        <a href="#" class="active">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M3 12h18M12 3a16 16 0 000 18M12 3a9 9 0 010 18"></path>
+          </svg>
+          Principal
+        </a>
+        <a href="#">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12l9-7 9 7"></path>
+            <path d="M5 10v10h14V10"></path>
+          </svg>
+          Home
+        </a>
+      </nav>
+
+      <!-- USUARIOS -->
+      <h3>Usuarios</h3>
+      <nav class="nav">
+        <a href="#">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4"></circle>
+            <path d="M4 20c2-4 6-6 8-6s6 2 8 6"></path>
+          </svg>
+          Usuarios
+        </a>
+        <a href="#">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 3l4 4-9 9-4-4 9-9z"></path>
+            <path d="M7 14l-3 3"></path>
+            <path d="M16 5l3-3"></path>
+          </svg>
+          Facsimil
+        </a>
+        <a href="#">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+          </svg>
+          Listado
+        </a>
+      </nav>
     </aside>
 
-    <!-- Main -->
-    <main class="main-area">
-      <div class="card">
-        <!-- tabs -->
-        <div class="tabs">
-          <button class="tab active" data-tab="transparencia">Transparencia</button>
-          <button class="tab" data-tab="rendicion">Rendición de Cuentas</button>
-          <button class="tab" data-tab="participacion">Participación Ciudadana</button>
-          <button class="tab" data-tab="colaboracion">Colaboración e Innovación</button>
-        </div>
-
-        <div id="content-area" class="content-area">
-          <!-- seccion renderizada por JS -->
-        </div>
-
-        <!-- footer controls -->
-        <div class="controls">
-          <div class="score-box">
-            <div>Puntaje: <strong id="score">0</strong> / <span id="maxScore">0</span></div>
-            <div class="muted">Caracterización: <span id="level">-</span></div>
-          </div>
-
-          <div class="buttons">
-            <button id="validateBtn" class="btn">Validar evidencias</button>
-            <button id="saveJson" class="btn primary">Guardar JSON</button>
-            <button id="exportCsv" class="btn">Exportar CSV</button>
-            <button id="resetBtn" class="btn">Reiniciar</button>
-          </div>
-        </div>
-
-        <div id="validationMessages" class="validation-messages"></div>
+    <!-- MAIN -->
+    <main class="card">
+      
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="transparencia">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="14" rx="2"/>
+            <path d="M7 8h10M7 12h10M7 16h10"/>
+          </svg>
+          Transparencia
+        </button>
+        <button class="tab" data-tab="rendicion">
+          <svg width="18" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+          stroke-linecap="round" stroke-linejoin="round" class="icon"><path d="M12 7v6"/>
+          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
+          <path d="M9 10h6"/>
+          </svg>
+          Rendición de Cuentas
+        </button>
+        <button class="tab" data-tab="participacion">
+          <svg width="18" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
+          stroke-linecap="round" stroke-linejoin="round" class="icon">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+          <circle cx="9" cy="7" r="4"/>
+          </svg>
+          </svg>
+          Participación Ciudadana
+        </button>
+        <button class="tab" data-tab="colaboracion">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.18a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.18a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+          Colaboración e Innovación
+        </button>
       </div>
-    </main>
-  </div>
 
-  <footer class="footer">
-    <div class="container">
-      <small> </small>
+      <div id="validationMessages" class="validation"></div>
+      <div id="content-area" class="panel"><!-- renderizado por JS --></div>
+      
+      <!-- Controles -->
+      <div class="controls">
+        <div class="btns">
+          <button id="cancelBtn" class="btn ghost">Cancelar</button>
+          <button id="saveBtn" class="btn primary">Guardar</button>
+          <!-- Menú Guardar -->
+          <div id="saveMenu" class="save-menu" aria-hidden="true">
+            <button id="saveJson" class="menu-item">Guardar JSON</button>
+            <button id="exportCsv" class="menu-item">Exportar CSV</button>
+          </div>
+        </div>
+      </div>
+
+
+
+      
+    </main>
+    <!-- Widget flotante de puntaje -->
+    <div class="score-dock" id="scoreDock" aria-live="polite">
+      <div class="sd-title">Puntaje</div>
+      <div class="sd-score">
+        <span id="sdScore">0</span> / <span id="sdMax">0</span>
+      </div>
+      <div class="sd-level" id="sdLevel">-</div>
+      <div class="sd-bar"><span id="sdBar"></span></div>
     </div>
-  </footer>
+
+  </div> <!-- /layout -->
 
   <script src="script.js"></script>
 </body>
