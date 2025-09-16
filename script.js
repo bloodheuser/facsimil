@@ -95,18 +95,15 @@ const sections = [
 /* ======= Referencias DOM ======= */
 const contentArea = document.getElementById('content-area');
 const validationMessages = document.getElementById('validationMessages');
-const saveMenu = document.getElementById('saveMenu');
-const saveBtn = document.getElementById('saveBtn');
 
 /* ======= Estado ======= */
 let totalQuestions = 0;
 let answers = {}; // key -> {value: 0|1|null, evidence: string, files: [names]}
-const ID_USUARIO_ACTUAL = 1; // reemplaza dinámicamente si corresponde
+const ID_USUARIO_ACTUAL = 1;
 
 function computeScore(){
   return Object.values(answers).reduce((acc, v) => acc + (v.value === 1 ? 1 : 0), 0);
 }
-
 
 /* ======= Helpers ======= */
 function keyFor(sectionKey, gi, ii){ return `${sectionKey}-${gi}-${ii}`; }
@@ -218,19 +215,14 @@ function buildUI(){
     contentArea.appendChild(sectionWrap);
   });
 
-  // Inicializa el dock flotante al construir la UI:
   updateScore();
-
-  // 👇 Muy importante: mostrar la sección que corresponde al tab activo
   showSectionByActiveTab();
 }
-
 
 /* ======= Puntaje y niveles ======= */
 function updateScore(){
   const score = computeScore();
 
-  // === Dock flotante ===
   const sdScore = document.getElementById('sdScore');
   const sdMax = document.getElementById('sdMax');
   const sdLevel = document.getElementById('sdLevel');
@@ -245,24 +237,20 @@ function updateScore(){
   }
 }
 
-
 function levelFromScore(score){
   if(score <= 12) return 'Nivel Inicial';
   if(score <= 24) return 'Nivel Intermedio';
   return 'Nivel Avanzado (Reconocimiento Público)';
 }
 
-/* ======= Validación =======
-   - Requiere que TODAS las preguntas tengan Sí/No.
-   - Requiere evidencia cuando la respuesta es Sí.
-*/
+/* ======= Validación ======= */
 function runValidation(){
   validationMessages.innerHTML = '';
+  validationMessages.classList.remove('error','ok');
 
   let unanswered = 0;
   let missingEvidence = 0;
 
-  // limpiar warnings de grupos
   document.querySelectorAll('.group').forEach(g => g.classList.remove('warn'));
 
   sections.forEach((section, si)=>{
@@ -271,12 +259,10 @@ function runValidation(){
       g.items.forEach((it, ii)=>{
         const k = keyFor(section.key, gi, ii);
         const v = answers[k] || {};
-        // sin respuesta
         if(v.value !== 0 && v.value !== 1){
           unanswered++;
           groupHasUnanswered = true;
         }
-        // sí sin evidencia
         if(v.value === 1 && (!v.evidence || v.evidence.trim()==='')){
           missingEvidence++;
           const el = document.querySelector(`.evidence-input[data-key="${k}"]`);
@@ -292,28 +278,26 @@ function runValidation(){
   });
 
   if(unanswered > 0 || missingEvidence > 0){
-    validationMessages.style.color = '#b91c1c';
+    validationMessages.classList.add('error');
     const parts = [];
     if(unanswered > 0) parts.push(`Hay ${unanswered} pregunta(s) sin responder. Selecciona “Sí” o “No”.`);
     if(missingEvidence > 0) parts.push(`Hay ${missingEvidence} respuesta(s) “Sí” sin evidencia.`);
     validationMessages.textContent = parts.join(' ');
     return false;
   } else {
-    validationMessages.style.color = '#065f46';
+    validationMessages.classList.add('ok');
     validationMessages.textContent = 'Validación OK — todas las preguntas tienen respuesta y las “Sí” tienen evidencia.';
     return true;
   }
 }
 
-/* ======= Exportar JSON ======= */
+/* ======= Exportar ======= */
 function saveJSON(){
+  const score = computeScore();
   const payload = {
     generatedAt: new Date().toISOString(),
     totalQuestions,
-    summary: {
-      score: computeScore(),
-      level: levelFromScore(computeScore())
-    },
+    summary: { score, level: levelFromScore(score) },
     answers: {}
   };
   for(const [k,v] of Object.entries(answers)){
@@ -322,13 +306,10 @@ function saveJSON(){
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'autoevaluacion_facsimil.json';
-  a.click();
+  a.href = url; a.download = 'autoevaluacion_facsimil.json'; a.click();
   URL.revokeObjectURL(url);
 }
 
-/* ======= Exportar CSV ======= */
 function exportCSV(){
   const header = ['item','seccion','grupo','pregunta','respuesta','evidencia','archivos'];
   const lines = [header.join(',')];
@@ -344,7 +325,7 @@ function exportCSV(){
           `"${it.q.replace(/"/g,'""')}"`,
           (a.value===1 ? 'Si' : a.value===0 ? 'No' : ''),
           `"${(a.evidence||'').replace(/"/g,'""')}"`,
-          `"${(a.files||[]).join(';').replace(/"/g,'""')}"`
+          `"${(a.files||[]).join(';').replace(/"/g,'""')}"`,
         ];
         lines.push(row.join(','));
       });
@@ -354,33 +335,26 @@ function exportCSV(){
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'autoevaluacion_facsimil.csv';
-  a.click();
+  a.href = url; a.download = 'autoevaluacion_facsimil.csv'; a.click();
   URL.revokeObjectURL(url);
 }
 
 /* ======= Reset ======= */
 function resetAll(){
   answers = {};
-  // Activa el primer tab visualmente
   const tabs = document.querySelectorAll('.tab');
   tabs.forEach((t,i)=> t.classList.toggle('active', i === 0));
-
-  // Reconstruye el contenido
   buildUI();
-
-  // Limpia mensajes y cierra menú guardar si estaba abierto
   validationMessages.textContent = '';
+  validationMessages.classList.remove('error','ok');
+
+  // Cierra el menú guardar si estaba abierto
+  const saveMenu = document.getElementById('saveMenu');
   if (saveMenu) saveMenu.classList.remove('open');
 
-  // Asegura mostrar sección del tab activo
   showSectionByActiveTab();
-
-  // Sube arriba
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
 
 /* ======= Tabs ======= */
 function setupTabs(){
@@ -388,9 +362,7 @@ function setupTabs(){
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
       btn.classList.add('active');
-
       document.querySelectorAll('.section-wrap').forEach(sec => sec.style.display='none');
-
       const key = btn.getAttribute('data-tab');
       const sectionIndex = sections.findIndex(s => s.key === key);
       if(sectionIndex >= 0){
@@ -399,11 +371,17 @@ function setupTabs(){
       }
     });
   });
-
-  // mostrar primera sección por defecto
-  document.querySelectorAll('.section-wrap').forEach((sec,i)=>{
-    sec.style.display = i===0 ? 'block' : 'none';
-  });
+  showSectionByActiveTab();
+}
+function showSectionByActiveTab(){
+  const wraps = document.querySelectorAll('.section-wrap');
+  wraps.forEach(sec => sec.style.display = 'none');
+  const activeTab = document.querySelector('.tab.active') || document.querySelector('.tab');
+  if(!activeTab){ if(wraps[0]) wraps[0].style.display = 'block'; return; }
+  const key = activeTab.getAttribute('data-tab');
+  const idx = sections.findIndex(s => s.key === key);
+  const sectionEl = (idx >= 0) ? wraps[idx] : wraps[0];
+  if(sectionEl) sectionEl.style.display = 'block';
 }
 
 /* ======= Backend (autosave por cambio) ======= */
@@ -428,57 +406,59 @@ function enviarRespuesta(idUsuario, idPregunta, respuesta, evidencia, archivos){
 buildUI();
 setupTabs();
 
-/* ======= Botones ======= */
-document.getElementById('cancelBtn').addEventListener('click', ()=>{
-  if(confirm('¿Cancelar y limpiar el formulario?')) resetAll();
-});
+/* ======= Botones en el dock ======= */
+const cancelBtn = document.getElementById('cancelBtn');
+const saveBtn   = document.getElementById('saveBtn');
+const saveMenu  = document.getElementById('saveMenu');
 
-/* Guardar: validar -> abrir menú de opciones (JSON/CSV) */
-saveBtn.addEventListener('click', ()=>{
-  const ok = runValidation();
-  if(!ok){
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    return;
-  }
-  saveMenu.classList.toggle('open');
-  saveMenu.setAttribute('aria-hidden', !saveMenu.classList.contains('open'));
-});
-
-/* Acciones del menú */
-document.getElementById('saveJson').addEventListener('click', ()=>{
-  saveJSON();
-  saveMenu.classList.remove('open');
-});
-document.getElementById('exportCsv').addEventListener('click', ()=>{
-  exportCSV();
-  saveMenu.classList.remove('open');
-});
-
-/* Cerrar menú al clickear fuera */
-document.addEventListener('click', (e)=>{
-  if(!saveMenu.contains(e.target) && e.target !== saveBtn){
-    saveMenu.classList.remove('open');
-  }
-});
-function showFirstSection() {
-  const wraps = document.querySelectorAll('.section-wrap');
-  wraps.forEach((sec, i) => sec.style.display = i === 0 ? 'block' : 'none');
+if (cancelBtn) {
+  cancelBtn.addEventListener('click', ()=>{
+    if(confirm('¿Cancelar y limpiar el formulario?')) resetAll();
+  });
 }
-function showSectionByActiveTab(){
-  const wraps = document.querySelectorAll('.section-wrap');
-  // Oculta todas las secciones
-  wraps.forEach(sec => sec.style.display = 'none');
 
-  // Usa el tab activo; si no hay, usa el primero
-  const activeTab = document.querySelector('.tab.active') || document.querySelector('.tab');
-  if(!activeTab){
-    // si no hay tabs por algun motivo, muestra la primera sección
-    if(wraps[0]) wraps[0].style.display = 'block';
-    return;
+if (saveBtn && saveMenu) {
+  // Guardar: validar -> abrir menú JSON/CSV
+  saveBtn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const ok = runValidation();
+    if(!ok){
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    saveMenu.classList.toggle('open');
+    saveMenu.setAttribute('aria-hidden', String(!saveMenu.classList.contains('open')));
+  });
+
+  // Clic dentro del menú no lo cierra
+  saveMenu.addEventListener('click', (e)=> e.stopPropagation());
+
+  // Clic fuera: cierra menú
+  document.addEventListener('click', (e)=>{
+    if (!saveBtn.contains(e.target) && !saveMenu.contains(e.target)) {
+      saveMenu.classList.remove('open');
+      saveMenu.setAttribute('aria-hidden','true');
+    }
+  });
+
+  // Acciones del menú (si quieres, puedes volver a validar aquí también)
+  const btnSaveJson  = document.getElementById('saveJson');
+  const btnExportCsv = document.getElementById('exportCsv');
+
+  if (btnSaveJson) {
+    btnSaveJson.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      saveJSON();
+      saveMenu.classList.remove('open');
+      saveMenu.setAttribute('aria-hidden','true');
+    });
   }
-
-  const key = activeTab.getAttribute('data-tab');
-  const idx = sections.findIndex(s => s.key === key);
-  const sectionEl = (idx >= 0) ? wraps[idx] : wraps[0];
-  if(sectionEl) sectionEl.style.display = 'block';
+  if (btnExportCsv) {
+    btnExportCsv.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      exportCSV();
+      saveMenu.classList.remove('open');
+      saveMenu.setAttribute('aria-hidden','true');
+    });
+  }
 }
