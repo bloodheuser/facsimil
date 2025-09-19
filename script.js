@@ -174,7 +174,7 @@ function buildUI(){
         wrap.appendChild(filecol);
         gEl.appendChild(wrap);
 
-        // Radios
+        // Radios d
         right.querySelectorAll('input[type=radio]').forEach(r => {
           r.addEventListener('change',(e)=>{
             answers[k].value = parseInt(e.target.value,10);
