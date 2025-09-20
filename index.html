@@ -13,12 +13,11 @@
       <div class="brand-left">
         <div class="brand-title">Facsimil</div>
       </div>
-
       <div class="rightblock">
         <div class="right-row">
           <!-- Campanita -->
-          <button class="bell" title="Notificaciones" type="button">
-            <svg viewBox="0 0 24 24" class="icon">
+          <button class="bell" title="Notificaciones">
+            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
               <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0"
                     fill="none" stroke="currentColor" stroke-width="2"/>
             </svg>
@@ -27,175 +26,183 @@
           <!-- Chip USER -->
           <div class="userchip">
             <span class="user-dot"></span>
-            <span class="user-label">USER</span>
-            <svg class="caret" viewBox="0 0 24 24">
+            <span class="user-label" id="topUserLabel">USER</span>
+            <svg class="caret" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"/>
             </svg>
           </div>
+
+          <!-- Cerrar sesión -->
+          <button id="logoutBtn" class="btn tiny outline" style="display:none">Cerrar sesión</button>
         </div>
 
         <!-- Nombre organización -->
-        <div class="orgname">Organización Comunitaria</div>
+        <div class="orgname" id="topOrgName">Organización Comunitaria</div>
       </div>
     </div>
   </header>
 
-  <!-- LAYOUT: Sidebar izquierda + Main derecha -->
+  <!-- LAYOUT -->
   <div class="layout">
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="welcome">Bienvenido</div>
-
-        <!-- Placeholder de avatar (futuro) -->
-        <div class="avatar-lg"></div>
+        <!-- Avatar/Uploader futuro -->
+        <label class="avatar-uploader" title="Subir foto de usuario">
+          <input type="file" id="avatarInput" accept="image/*" hidden />
+          <div class="avatar-lg" id="avatarPreview" aria-label="Avatar de usuario"></div>
+        </label>
       </div>
 
       <!-- HOME -->
       <h3>Home</h3>
       <nav class="nav">
-        <a href="#" class="active">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="9"></circle>
-            <path d="M3 12h18M12 3a16 16 0 000 18M12 3a9 9 0 010 18"></path>
-          </svg>
-          Principal
-        </a>
-        <a href="#">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M3 12l9-7 9 7"></path>
-            <path d="M5 10v10h14V10"></path>
-          </svg>
-          Home
-        </a>
+        <a href="#" class="active">Principal</a>
+        <a href="#">Home</a>
       </nav>
 
       <!-- USUARIOS -->
       <h3>Usuarios</h3>
       <nav class="nav">
-        <a href="#">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="8" r="4"></circle>
-            <path d="M4 20c2-4 6-6 8-6s6 2 8 6"></path>
-          </svg>
-          Usuarios
-        </a>
-        <a href="#">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 3l4 4-9 9-4-4 9-9z"></path>
-            <path d="M7 14l-3 3"></path>
-            <path d="M16 5l3-3"></path>
-          </svg>
-          Facsimil
-        </a>
-        <a href="#">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-            <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-            <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-            <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-          </svg>
-          Listado
-        </a>
+        <a href="#">Usuarios</a>
+        <a href="#">Facsimil</a>
+        <a href="#">Listado</a>
       </nav>
     </aside>
-    
-    <!-- MAIN -->
-    <main class="card">
-      
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" data-tab="transparencia">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="4" width="18" height="14" rx="2"/>
-            <path d="M7 8h10M7 12h10M7 16h10"/>
-          </svg>
-          Transparencia
-        </button>
-        <button class="tab" data-tab="rendicion">
-          <svg width="18" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
-               stroke-linecap="round" stroke-linejoin="round" class="icon">
-            <path d="M12 7v6"/>
-            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>
-            <path d="M9 10h6"/>
-          </svg>
-          Rendición de Cuentas
-        </button>
-        <button class="tab" data-tab="participacion">
-          <svg width="18" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" 
-               stroke-linecap="round" stroke-linejoin="round" class="icon">
-            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-            <path d="M16 3.128a4 4 0 0 1 0 7.744"/>
-            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
-            <circle cx="9" cy="7" r="4"/>
-          </svg>
-          Participación Ciudadana
-        </button>
-        <button class="tab" data-tab="colaboracion">
-          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1z"/>
-          </svg>
-          Colaboración e Innovación
-        </button>
+
+    <!-- ===== AUTH GATE (DEMO sin backend) ===== -->
+    <section id="authGate" class="auth-gate" aria-live="polite">
+      <div class="auth-card">
+        <h2>Organizaciones Comunitarias</h2>
+        <p class="muted">Inscribe tu organización o accede si ya fue aprobada.</p>
+
+        <div class="auth-grid">
+          <!-- Inscribir organización -->
+          <div class="auth-panel">
+            <h3>Inscribir organización</h3>
+            <form id="orgRegisterForm">
+              <label for="razon">Razón social</label>
+              <input id="razon" type="text" name="razon" required>
+              <label for="rut">RUT organización</label>
+              <input id="rut" type="text" name="rut" required>
+              <label for="dom_org">Domicilio organización</label>
+              <input id="dom_org" type="text" name="dom_org" required>
+
+              <hr class="sep">
+
+              <label for="rep_run">Representante legal — RUN</label>
+              <input id="rep_run" type="text" name="rep_run" required>
+              <label for="rep_nombre">Representante — Nombre</label>
+              <input id="rep_nombre" type="text" name="rep_nombre" required>
+              <label for="rep_dom">Representante — Domicilio</label>
+              <input id="rep_dom" type="text" name="rep_dom" required>
+
+              <hr class="sep">
+
+              <label for="email">Usuario (owner) — Email</label>
+              <input id="email" type="email" name="email" required>
+              <label for="pass">Contraseña</label>
+              <input id="pass" type="password" name="pass" required>
+
+              <button type="submit" class="btn primary wfull">Inscribir (pendiente)</button>
+            </form>
+            <div class="help">Un administrador deberá aprobarla para poder acceder al formulario.</div>
+          </div>
+
+          <!-- Ingresar -->
+          <div class="auth-panel">
+            <h3>Ingresar</h3>
+            <form id="loginForm">
+              <label for="login_email">Email</label>
+              <input id="login_email" type="email" name="email" required>
+              <label for="login_pass">Contraseña</label>
+              <input id="login_pass" type="password" name="pass" required>
+              <button type="submit" class="btn primary wfull">Entrar</button>
+            </form>
+            <div class="help">Solo organizaciones <b>aprobadas</b> pueden acceder.</div>
+          </div>
+
+          <!-- Admin (DEMO) -->
+          <div class="auth-panel">
+            <h3>Admin (DEMO)</h3>
+            <form id="adminForm">
+              <label for="adminkey">Clave admin demo</label>
+              <input id="adminkey" type="password" name="adminkey" placeholder="admin123" required>
+              <button type="submit" class="btn ghost wfull">Entrar</button>
+            </form>
+
+            <div id="adminPanel" class="admin-panel hidden">
+              <div class="admin-head">
+                <strong>Pendientes</strong>
+                <button id="adminLogout" class="btn tiny">Salir</button>
+              </div>
+              <div id="pendingList" class="pending-list muted">Sin pendientes…</div>
+            </div>
+          </div>
+        </div>
       </div>
-      
-      
-      <!-- Barra de validación (arriba y sticky) -->
+    </section>
+    <!-- ===== /AUTH GATE ===== -->
+
+    <!-- ===== MAIN APP ===== -->
+    <main class="card" id="appMain" style="display:none">
+      <!-- Tabs dinámicos -->
+      <div class="tabs" id="tabs"></div>
+
+      <!-- Mensajes de validación -->
       <div id="validationMessages" class="validation"></div>
+
       <!-- Contenido dinámico -->
-      <div id="content-area" class="panel"><!-- renderizado por JS --></div>
-      
-      <!-- (IMPORTANTE) Eliminado el bloque de controles antiguo dentro de MAIN -->
+      <div id="content-area" class="panel"></div>
+
+      <!-- Controles originales (ocultos en CSS; los dejamos por fallback) -->
+      <div class="controls">
+        <div class="btns">
+          <button id="cancelBtn" class="btn ghost" type="button">Cancelar</button>
+          <button id="saveBtn" class="btn primary" type="button">Guardar</button>
+          <!-- Menú contextual original -->
+          <div id="saveMenu" class="save-menu" aria-hidden="true">
+            <button id="saveJson" class="menu-item" type="button">Guardar JSON</button>
+            <button id="exportCsv" class="menu-item" type="button">Exportar CSV</button>
+          </div>
+        </div>
+      </div>
     </main>
-    
-  </div> <!-- /layout -->
-  
-  <!-- Dock flotante combinado: Puntaje + Acciones -->
-  <div class="score-actions-dock mini" id="scoreDock" aria-live="polite">
-    
-    <div class="score-box">
+    <!-- ===== /MAIN APP ===== -->
+
+    <!-- Dock flotante: puntaje + acciones -->
+    <div class="score-dock" id="scoreDock" aria-live="polite">
       <div class="sd-title">Puntaje</div>
       <div class="sd-score">
         <span id="sdScore">0</span> / <span id="sdMax">0</span>
       </div>
       <div class="sd-level" id="sdLevel">-</div>
       <div class="sd-bar"><span id="sdBar"></span></div>
-      
-    </div>
 
-    <div class="actions-box">
-      <button id="cancelBtn" class="btn ghost" type="button">
-        <!-- icono cancelar (X) -->
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-          
-        </svg>
-        
-        Cancelar
-      </button>
-
-      <button id="saveBtn" class="btn primary" type="button">
-        <!-- icono guardar (disquete) -->
-        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M4 4h16v16H4z"/>
-          <path d="M4 4h16v5H4z"/>
-          <rect x="8" y="12" width="8" height="8"/>
-        </svg>
-        Guardar
-      </button>
-      <!-- wa -->
-      <!-- Menú Guardar -->
-      <div id="saveMenu" class="save-menu" aria-hidden="true">
-        <button id="saveJson" class="menu-item" type="button">Guardar JSON</button>
-        <button id="exportCsv" class="menu-item" type="button">Exportar CSV</button>
+      <!-- Acciones en el dock -->
+      <div class="sd-actions">
+        <button id="cancelBtnDock" class="btn ghost tiny" type="button">
+          <!-- ícono cancelar -->
+          <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          Cancelar
+        </button>
+        <div class="savewrap">
+          <button id="saveBtnDock" class="btn primary tiny" type="button">
+            <!-- ícono guardar -->
+            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2zM7 3v6h8V3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+            Guardar
+          </button>
+          <!-- Menú contextual del dock -->
+          <div id="saveMenuDock" class="save-menu" aria-hidden="true">
+            <button id="saveJsonDock" class="menu-item" type="button">Guardar JSON</button>
+            <button id="exportCsvDock" class="menu-item" type="button">Exportar CSV</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  </div> <!-- /layout -->
 
   <script src="script.js"></script>
 </body>
-
 </html>
-  

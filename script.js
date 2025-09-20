@@ -1,4 +1,33 @@
-/* ======= Estructura de datos ======= */
+/* =======================================================
+   DEMO MULTI-ORG / MULTI-USUARIO (sin backend por ahora)
+   ======================================================= */
+const ADMIN_DEMO_KEY = 'admin123';
+
+const LS_ORGS = 'facsimil.orgs';
+const LS_SESSION = 'facsimil.session';
+const LS_ACTIVE_TAB = 'facsimil.activeTab';
+
+function lsGet(key, def){ try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; } }
+function lsSet(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+function uid(){ return Math.random().toString(36).slice(2,10); }
+
+function getSession(){ return lsGet(LS_SESSION, null); }
+function setSession(sess){ lsSet(LS_SESSION, sess); }
+function clearSession(){ localStorage.removeItem(LS_SESSION); }
+function getOrgs(){ return lsGet(LS_ORGS, []); }
+function setOrgs(orgs){ lsSet(LS_ORGS, orgs); }
+
+function currentApprovedOrg(){
+  const sess = getSession();
+  if(!sess) return null;
+  const org = getOrgs().find(o => o.id === sess.orgId);
+  if(!org || org.estado !== 'aprobada') return null;
+  return org;
+}
+
+/* =======================================================
+   SECCIONES DEL FORMULARIO (COMPLETO)
+   ======================================================= */
 const sections = [
   {
     key: "transparencia",
@@ -92,23 +121,81 @@ const sections = [
   }
 ];
 
-/* ======= Referencias DOM ======= */
+/* =======================================================
+   REFERENCIAS DOM Y ESTADO
+   ======================================================= */
 const contentArea = document.getElementById('content-area');
 const validationMessages = document.getElementById('validationMessages');
+const saveMenu = document.getElementById('saveMenu');        // menú original (oculto visualmente)
+const saveBtn = document.getElementById('saveBtn');          // botón original (oculto)
+const cancelBtn = document.getElementById('cancelBtn');      // botón original (oculto)
 
-/* ======= Estado ======= */
+/* Dock elements */
+const saveMenuDock = document.getElementById('saveMenuDock');
+const saveBtnDock = document.getElementById('saveBtnDock');
+const cancelBtnDock = document.getElementById('cancelBtnDock');
+
 let totalQuestions = 0;
-let answers = {}; // key -> {value: 0|1|null, evidence: string, files: [names]}
-const ID_USUARIO_ACTUAL = 1;
+let answers = {}; // key -> { value:0|1|null, evidence:string, files:[] }
 
-function computeScore(){
-  return Object.values(answers).reduce((acc, v) => acc + (v.value === 1 ? 1 : 0), 0);
+/* =======================================================
+   HELPERS
+   ======================================================= */
+function keyFor(sectionKey, gi, ii){ return `${sectionKey}-${gi}-${ii}`; }
+function computeScore(){ return Object.values(answers).reduce((acc, v) => acc + (v.value === 1 ? 1 : 0), 0); }
+
+function resetActiveTab(){ localStorage.removeItem(LS_ACTIVE_TAB); }
+function resetDock(){
+  const sdScore = document.getElementById('sdScore');
+  const sdMax   = document.getElementById('sdMax');
+  const sdLevel = document.getElementById('sdLevel');
+  const sdBar   = document.getElementById('sdBar');
+  if (sdScore) sdScore.textContent = '0';
+  if (sdMax)   sdMax.textContent   = '0';
+  if (sdLevel) sdLevel.textContent = '-';
+  if (sdBar)   sdBar.style.width   = '0%';
 }
 
-/* ======= Helpers ======= */
-function keyFor(sectionKey, gi, ii){ return `${sectionKey}-${gi}-${ii}`; }
+/* ===== Tabs dinámicos a partir de sections[] + ICONOS ===== */
+const TAB_ICONS = {
+  transparencia: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M10 14l2-2 2 2m-2-2V8"/></svg>`,
+  rendicion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg>`,
+  participacion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/></svg>`,
+  colaboracion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.18a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.18a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
+};
 
-/* ======= Construcción de UI ======= */
+function getActiveTabKey() {
+  const k = localStorage.getItem(LS_ACTIVE_TAB);
+  if (k && sections.some(s => s.key === k)) return k;
+  return sections[0]?.key || null;
+}
+function setActiveTabKey(key) { localStorage.setItem(LS_ACTIVE_TAB, key); }
+
+function buildTabs() {
+  const tabsWrap = document.getElementById('tabs');
+  if (!tabsWrap) return;
+  tabsWrap.innerHTML = '';
+
+  const activeKey = getActiveTabKey();
+  sections.forEach((sec) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (sec.key === activeKey ? ' active' : '');
+    btn.setAttribute('data-tab', sec.key);
+    const icon = TAB_ICONS[sec.key] || '';
+    btn.innerHTML = `${icon}<span>${sec.title}</span>`;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#tabs .tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      setActiveTabKey(sec.key);
+      showSectionByActiveTab();
+    });
+    tabsWrap.appendChild(btn);
+  });
+}
+
+/* =======================================================
+   BUILD UI
+   ======================================================= */
 function buildUI(){
   contentArea.innerHTML = '';
   totalQuestions = 0;
@@ -125,7 +212,6 @@ function buildUI(){
     section.groups.forEach((g, gi) => {
       const gEl = document.createElement('div');
       gEl.className = 'group';
-
       const hg = document.createElement('h3');
       hg.textContent = g.group;
       gEl.appendChild(hg);
@@ -147,39 +233,28 @@ function buildUI(){
         const right = document.createElement('div');
         right.className = 'yn';
         right.innerHTML = `
-          <div class="radio">
-            <input type="radio" id="${k}-si" name="${k}" value="1" />
-            <label for="${k}-si">Si</label>
-          </div>
-          <div class="radio">
-            <input type="radio" id="${k}-no" name="${k}" value="0" />
-            <label for="${k}-no">No</label>
-          </div>
+          <div class="radio"><input type="radio" id="${k}-si" name="${k}" value="1"><label for="${k}-si">Si</label></div>
+          <div class="radio"><input type="radio" id="${k}-no" name="${k}" value="0"><label for="${k}-no">No</label></div>
         `;
 
-        row.appendChild(left);
-        row.appendChild(right);
+        row.appendChild(left); row.appendChild(right);
 
         const filecol = document.createElement('div');
         filecol.className = 'filecol';
         filecol.innerHTML = `
-          <input type="text" class="evidence-input"
-                 placeholder="Referencia a evidencia (ej. Acta N°3, marzo 2023)"
-                 data-key="${k}">
+          <input type="text" class="evidence-input" placeholder="Referencia a evidencia (ej. Acta N°3, marzo 2023)" data-key="${k}">
           <input type="file" class="file-input" data-key="${k}" multiple>
         `;
 
         const wrap = document.createElement('div');
-        wrap.appendChild(row);
-        wrap.appendChild(filecol);
+        wrap.appendChild(row); wrap.appendChild(filecol);
         gEl.appendChild(wrap);
 
-        // Radios d
+        // Radios
         right.querySelectorAll('input[type=radio]').forEach(r => {
           r.addEventListener('change',(e)=>{
             answers[k].value = parseInt(e.target.value,10);
             updateScore();
-
             const ev = filecol.querySelector('.evidence-input');
             if (answers[k].value === 1) {
               filecol.classList.add('active');
@@ -190,28 +265,21 @@ function buildUI(){
               answers[k].evidence = '';
               answers[k].files = [];
             }
-
-            enviarRespuesta(ID_USUARIO_ACTUAL, k, answers[k].value, answers[k].evidence, answers[k].files);
           });
         });
 
-        const evInput = filecol.querySelector('.evidence-input');
-        evInput.addEventListener('input',(e)=>{
+        // Evidencia
+        filecol.querySelector('.evidence-input').addEventListener('input',(e)=>{
           answers[k].evidence = e.target.value.trim();
-          enviarRespuesta(ID_USUARIO_ACTUAL, k, answers[k].value, answers[k].evidence, answers[k].files);
         });
 
-        const fInput = filecol.querySelector('.file-input');
-        fInput.addEventListener('change',(e)=>{
-          const names = Array.from(e.target.files).map(f=>f.name);
-          answers[k].files = names;
-          enviarRespuesta(ID_USUARIO_ACTUAL, k, answers[k].value, answers[k].evidence, answers[k].files);
+        // Archivos
+        filecol.querySelector('.file-input').addEventListener('change',(e)=>{
+          answers[k].files = Array.from(e.target.files).map(f=>f.name);
         });
       });
-
       sectionWrap.appendChild(gEl);
     });
-
     contentArea.appendChild(sectionWrap);
   });
 
@@ -219,85 +287,81 @@ function buildUI(){
   showSectionByActiveTab();
 }
 
-/* ======= Puntaje y niveles ======= */
+/* =======================================================
+   SCORE DOCK
+   ======================================================= */
 function updateScore(){
   const score = computeScore();
-
   const sdScore = document.getElementById('sdScore');
   const sdMax = document.getElementById('sdMax');
   const sdLevel = document.getElementById('sdLevel');
   const sdBar = document.getElementById('sdBar');
 
-  if (sdScore && sdMax && sdLevel && sdBar){
+  if (sdScore){
     sdScore.textContent = score;
     sdMax.textContent = totalQuestions;
     sdLevel.textContent = levelFromScore(score);
-    const pct = totalQuestions ? Math.round((score / totalQuestions) * 100) : 0;
-    sdBar.style.width = pct + '%';
+    const pct = totalQuestions ? Math.round((score/totalQuestions)*100) : 0;
+    sdBar.style.width = pct+'%';
   }
 }
-
 function levelFromScore(score){
   if(score <= 12) return 'Nivel Inicial';
   if(score <= 24) return 'Nivel Intermedio';
   return 'Nivel Avanzado (Reconocimiento Público)';
 }
 
-/* ======= Validación ======= */
+/* =======================================================
+   VALIDATION
+   ======================================================= */
 function runValidation(){
   validationMessages.innerHTML = '';
-  validationMessages.classList.remove('error','ok');
-
-  let unanswered = 0;
-  let missingEvidence = 0;
-
+  let unanswered = 0, missingEvidence = 0;
   document.querySelectorAll('.group').forEach(g => g.classList.remove('warn'));
 
-  sections.forEach((section, si)=>{
+  sections.forEach((section)=>{
     section.groups.forEach((g, gi)=>{
       let groupHasUnanswered = false;
       g.items.forEach((it, ii)=>{
         const k = keyFor(section.key, gi, ii);
         const v = answers[k] || {};
-        if(v.value !== 0 && v.value !== 1){
-          unanswered++;
-          groupHasUnanswered = true;
-        }
-        if(v.value === 1 && (!v.evidence || v.evidence.trim()==='')){
-          missingEvidence++;
-          const el = document.querySelector(`.evidence-input[data-key="${k}"]`);
-          if(el) el.style.borderColor = '#dc2626';
-        }
+        if(v.value !== 0 && v.value !== 1){ unanswered++; groupHasUnanswered = true; }
+        if(v.value === 1 && (!v.evidence || v.evidence.trim()==='')){ missingEvidence++; }
       });
       if(groupHasUnanswered){
-        const groups = document.querySelectorAll('.group');
-        const idx = Array.from(groups).findIndex((el)=> el.querySelector('h3')?.textContent === g.group);
-        if(idx > -1) groups[idx].classList.add('warn');
+        // marca el grupo por título
+        document.querySelectorAll('.group').forEach(gr => {
+          if (gr.querySelector('h3')?.textContent === g.group) gr.classList.add('warn');
+        });
       }
     });
   });
 
   if(unanswered > 0 || missingEvidence > 0){
-    validationMessages.classList.add('error');
+    validationMessages.style.color = '#b91c1c';
     const parts = [];
     if(unanswered > 0) parts.push(`Hay ${unanswered} pregunta(s) sin responder. Selecciona “Sí” o “No”.`);
     if(missingEvidence > 0) parts.push(`Hay ${missingEvidence} respuesta(s) “Sí” sin evidencia.`);
     validationMessages.textContent = parts.join(' ');
     return false;
   } else {
-    validationMessages.classList.add('ok');
+    validationMessages.style.color = '#065f46';
     validationMessages.textContent = 'Validación OK — todas las preguntas tienen respuesta y las “Sí” tienen evidencia.';
     return true;
   }
 }
 
-/* ======= Exportar ======= */
+/* =======================================================
+   EXPORT JSON / CSV
+   ======================================================= */
 function saveJSON(){
-  const score = computeScore();
   const payload = {
     generatedAt: new Date().toISOString(),
     totalQuestions,
-    summary: { score, level: levelFromScore(score) },
+    summary: {
+      score: computeScore(),
+      level: levelFromScore(computeScore())
+    },
     answers: {}
   };
   for(const [k,v] of Object.entries(answers)){
@@ -305,11 +369,9 @@ function saveJSON(){
   }
   const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'autoevaluacion_facsimil.json'; a.click();
+  const a = document.createElement('a'); a.href = url; a.download = 'autoevaluacion_facsimil.json'; a.click();
   URL.revokeObjectURL(url);
 }
-
 function exportCSV(){
   const header = ['item','seccion','grupo','pregunta','respuesta','evidencia','archivos'];
   const lines = [header.join(',')];
@@ -334,131 +396,236 @@ function exportCSV(){
   const csv = lines.join('\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'autoevaluacion_facsimil.csv'; a.click();
+  const a = document.createElement('a'); a.href = url; a.download = 'autoevaluacion_facsimil.csv'; a.click();
   URL.revokeObjectURL(url);
 }
 
-/* ======= Reset ======= */
+/* =======================================================
+   RESET / TABS
+   ======================================================= */
 function resetAll(){
   answers = {};
-  const tabs = document.querySelectorAll('.tab');
-  tabs.forEach((t,i)=> t.classList.toggle('active', i === 0));
+  resetActiveTab();
+  buildTabs();
   buildUI();
-  validationMessages.textContent = '';
-  validationMessages.classList.remove('error','ok');
-
-  // Cierra el menú guardar si estaba abierto
-  const saveMenu = document.getElementById('saveMenu');
+  if (validationMessages) validationMessages.textContent = '';
   if (saveMenu) saveMenu.classList.remove('open');
-
-  showSectionByActiveTab();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (saveMenuDock) saveMenuDock.classList.remove('open');
+  resetDock();
+  window.scrollTo({top:0,behavior:'smooth'});
 }
 
-/* ======= Tabs ======= */
-function setupTabs(){
-  document.querySelectorAll('.tab').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      btn.classList.add('active');
-      document.querySelectorAll('.section-wrap').forEach(sec => sec.style.display='none');
-      const key = btn.getAttribute('data-tab');
-      const sectionIndex = sections.findIndex(s => s.key === key);
-      if(sectionIndex >= 0){
-        const sectionEl = document.querySelectorAll('.section-wrap')[sectionIndex];
-        if(sectionEl) sectionEl.style.display = 'block';
-      }
-    });
-  });
-  showSectionByActiveTab();
-}
+function setupTabs(){ /* listeners ya se crean en buildTabs() */ }
+
 function showSectionByActiveTab(){
   const wraps = document.querySelectorAll('.section-wrap');
-  wraps.forEach(sec => sec.style.display = 'none');
-  const activeTab = document.querySelector('.tab.active') || document.querySelector('.tab');
-  if(!activeTab){ if(wraps[0]) wraps[0].style.display = 'block'; return; }
-  const key = activeTab.getAttribute('data-tab');
-  const idx = sections.findIndex(s => s.key === key);
-  const sectionEl = (idx >= 0) ? wraps[idx] : wraps[0];
-  if(sectionEl) sectionEl.style.display = 'block';
+  wraps.forEach(sec => sec.style.display='none');
+
+  const activeKey = getActiveTabKey();
+  const idx = sections.findIndex(s => s.key === activeKey);
+  const el = (idx >= 0) ? wraps[idx] : wraps[0];
+  if (el) el.style.display = 'block';
 }
 
-/* ======= Backend (autosave por cambio) ======= */
-function enviarRespuesta(idUsuario, idPregunta, respuesta, evidencia, archivos){
-  fetch("http://localhost:3001/api/respuestas", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id_usuario: idUsuario,
-      id_pregunta: idPregunta,
-      respuesta,
-      evidencia,
-      archivos: (archivos || []).join(",")
-    })
-  })
-  .then(res => res.json())
-  .then(data => console.log("Guardado en la BD:", data))
-  .catch(err => console.error("Error al guardar:", err));
-}
+/* =======================================================
+   TOPBAR USER
+   ======================================================= */
+function refreshTopbarUser(){
+  const sess = getSession();
+  const org  = currentApprovedOrg();
+  const logoutBtn = document.getElementById('logoutBtn');
+  const topOrgName = document.getElementById('topOrgName');
+  const topUserLabel = document.getElementById('topUserLabel');
 
-/* ======= Init ======= */
-buildUI();
-setupTabs();
-
-/* ======= Botones en el dock ======= */
-const cancelBtn = document.getElementById('cancelBtn');
-const saveBtn   = document.getElementById('saveBtn');
-const saveMenu  = document.getElementById('saveMenu');
-
-if (cancelBtn) {
-  cancelBtn.addEventListener('click', ()=>{
-    if(confirm('¿Cancelar y limpiar el formulario?')) resetAll();
-  });
-}
-
-if (saveBtn && saveMenu) {
-  // Guardar: validar -> abrir menú JSON/CSV
-  saveBtn.addEventListener('click', (e)=>{
-    e.stopPropagation();
-    const ok = runValidation();
-    if(!ok){
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    saveMenu.classList.toggle('open');
-    saveMenu.setAttribute('aria-hidden', String(!saveMenu.classList.contains('open')));
-  });
-
-  // Clic dentro del menú no lo cierra
-  saveMenu.addEventListener('click', (e)=> e.stopPropagation());
-
-  // Clic fuera: cierra menú
-  document.addEventListener('click', (e)=>{
-    if (!saveBtn.contains(e.target) && !saveMenu.contains(e.target)) {
-      saveMenu.classList.remove('open');
-      saveMenu.setAttribute('aria-hidden','true');
-    }
-  });
-
-  // Acciones del menú (si quieres, puedes volver a validar aquí también)
-  const btnSaveJson  = document.getElementById('saveJson');
-  const btnExportCsv = document.getElementById('exportCsv');
-
-  if (btnSaveJson) {
-    btnSaveJson.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      saveJSON();
-      saveMenu.classList.remove('open');
-      saveMenu.setAttribute('aria-hidden','true');
-    });
+  if (org && sess){
+    if (topOrgName) topOrgName.textContent = org.razon || 'Organización aprobada';
+    if (topUserLabel) topUserLabel.textContent = (sess.email || 'USER');
+    if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+  } else {
+    if (topOrgName) topOrgName.textContent = 'Organización Comunitaria';
+    if (topUserLabel) topUserLabel.textContent = 'USER';
+    if (logoutBtn) logoutBtn.style.display = 'none';
   }
-  if (btnExportCsv) {
-    btnExportCsv.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      exportCSV();
-      saveMenu.classList.remove('open');
-      saveMenu.setAttribute('aria-hidden','true');
-    });
+}
+
+/* =======================================================
+   APP / GATE
+   ======================================================= */
+function showApp(){
+  document.getElementById('authGate').style.display='none';
+  document.getElementById('appMain').style.display='block';
+
+  if (!localStorage.getItem(LS_ACTIVE_TAB) && sections[0]) setActiveTabKey(sections[0].key);
+  buildTabs();
+  buildUI();
+  setupTabs();
+  refreshTopbarUser();
+}
+function showGate(){
+  document.getElementById('appMain').style.display='none';
+  document.getElementById('authGate').style.display='block';
+  refreshTopbarUser();
+}
+function checkSessionAndRender(){
+  const org = currentApprovedOrg();
+  if(org){ showApp(); } else { showGate(); }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  checkSessionAndRender();
+  refreshTopbarUser();
+});
+
+/* =======================================================
+   BOTONES: Guardar/Cancelar (originales + DOCK)
+   ======================================================= */
+function onCancel(){
+  if(confirm('¿Cancelar y limpiar el formulario?')) resetAll();
+}
+function onSaveClick(menuEl){
+  const ok = runValidation();
+  if(!ok){
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
   }
+  // Toggle del menú asociado (puede ser el original o el del dock)
+  if (!menuEl) return;
+  menuEl.classList.toggle('open');
+  menuEl.setAttribute('aria-hidden', !menuEl.classList.contains('open'));
+}
+
+/* Originales (ocultos, pero funcionales) */
+if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
+if (saveBtn) saveBtn.addEventListener('click', ()=> onSaveClick(saveMenu));
+if (document.getElementById('saveJson'))
+  document.getElementById('saveJson').addEventListener('click', ()=>{ saveJSON(); saveMenu.classList.remove('open'); });
+if (document.getElementById('exportCsv'))
+  document.getElementById('exportCsv').addEventListener('click', ()=>{ exportCSV(); saveMenu.classList.remove('open'); });
+
+/* Dock */
+if (cancelBtnDock) cancelBtnDock.addEventListener('click', onCancel);
+if (saveBtnDock) saveBtnDock.addEventListener('click', ()=> onSaveClick(saveMenuDock));
+if (document.getElementById('saveJsonDock'))
+  document.getElementById('saveJsonDock').addEventListener('click', ()=>{ saveJSON(); saveMenuDock.classList.remove('open'); });
+if (document.getElementById('exportCsvDock'))
+  document.getElementById('exportCsvDock').addEventListener('click', ()=>{ exportCSV(); saveMenuDock.classList.remove('open'); });
+
+/* Cerrar menús al clickear fuera (aplica a ambos) */
+document.addEventListener('click', (e)=>{
+  const clickInsideAnyMenu =
+    (saveMenu && saveMenu.contains(e.target)) ||
+    (saveMenuDock && saveMenuDock.contains(e.target)) ||
+    (e.target === saveBtn) || (e.target === saveBtnDock);
+
+  if (!clickInsideAnyMenu){
+    if (saveMenu) saveMenu.classList.remove('open');
+    if (saveMenuDock) saveMenuDock.classList.remove('open');
+  }
+});
+
+/* =======================================================
+   CERRAR SESIÓN
+   ======================================================= */
+const logoutBtnEl = document.getElementById('logoutBtn');
+if (logoutBtnEl){
+  logoutBtnEl.addEventListener('click', ()=>{
+    if (!confirm('¿Cerrar sesión?')) return;
+
+    clearSession();
+    resetActiveTab();
+
+    answers = {};
+    if (validationMessages) validationMessages.textContent = '';
+    if (saveMenu) saveMenu.classList.remove('open');
+    if (saveMenuDock) saveMenuDock.classList.remove('open');
+
+    const tabsWrap = document.getElementById('tabs');
+    const content  = document.getElementById('content-area');
+    if (tabsWrap) tabsWrap.innerHTML = '';
+    if (content)  content.innerHTML  = '';
+    resetDock();
+
+    showGate();
+    refreshTopbarUser();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+/* =======================================================
+   AUTH GATE: Registro, Login, Admin DEMO
+   ======================================================= */
+const orgRegisterForm=document.getElementById('orgRegisterForm');
+if(orgRegisterForm){
+  orgRegisterForm.addEventListener('submit',(e)=>{
+    e.preventDefault();
+    const fd=new FormData(orgRegisterForm);
+    const orgs=getOrgs();
+    const orgId=uid();
+    const newOrg={
+      id:orgId, razon:fd.get('razon').trim(), rut:fd.get('rut').trim(),
+      dom_org:fd.get('dom_org').trim(),
+      representante:{ run:fd.get('rep_run').trim(), nombre:fd.get('rep_nombre').trim(), dom:fd.get('rep_dom').trim() },
+      estado:'pendiente',
+      usuarios:[{ email:fd.get('email').trim().toLowerCase(), nombre:fd.get('rep_nombre').trim(), role:'owner', pass:fd.get('pass')}],
+      createdAt:new Date().toISOString()
+    };
+    orgs.push(newOrg); setOrgs(orgs); orgRegisterForm.reset();
+    alert('Organización inscrita. Queda en estado PENDIENTE hasta aprobación de administrador.');
+  });
+}
+
+const loginForm=document.getElementById('loginForm');
+if(loginForm){
+  loginForm.addEventListener('submit',(e)=>{
+    e.preventDefault();
+    const fd=new FormData(loginForm);
+    const email=fd.get('email').trim().toLowerCase();
+    const pass=fd.get('pass');
+    const orgs=getOrgs(); let found=null,org=null;
+    for(const o of orgs){ const u=(o.usuarios||[]).find(u=>u.email===email&&u.pass===pass); if(u){found=u;org=o;break;} }
+    if(!found){ alert('Credenciales inválidas.'); return; }
+    if(org.estado!=='aprobada'){ alert('Organización aún no aprobada por el administrador.'); return; }
+    setSession({orgId:org.id,email:found.email,role:found.role});
+    loginForm.reset(); checkSessionAndRender();
+  });
+}
+
+const adminForm=document.getElementById('adminForm');
+const adminPanel=document.getElementById('adminPanel');
+const adminLogout=document.getElementById('adminLogout');
+const pendingList=document.getElementById('pendingList');
+
+function renderPending(){
+  const orgs=getOrgs(); const pend=orgs.filter(o=>o.estado==='pendiente');
+  if(pend.length===0){ pendingList.innerHTML='Sin pendientes…'; return; }
+  pendingList.innerHTML=pend.map(o=>`
+    <div class="pending-item">
+      <div><b>${o.razon}</b> — RUT: ${o.rut}</div>
+      <div class="muted">Rep: ${o.representante.nombre} (${o.representante.run})</div>
+      <div class="pending-actions">
+        <button class="btn tiny success" data-approve="${o.id}">Aprobar</button>
+        <button class="btn tiny danger" data-reject="${o.id}">Rechazar</button>
+      </div>
+    </div>`).join('');
+}
+
+if(adminForm){
+  adminForm.addEventListener('submit',(e)=>{
+    e.preventDefault();
+    const key=new FormData(adminForm).get('adminkey');
+    if(key===ADMIN_DEMO_KEY){ adminPanel.classList.remove('hidden'); renderPending(); }
+    else alert('Clave admin inválida (usa "admin123" en DEMO).');
+  });
+}
+if(adminLogout){
+  adminLogout.addEventListener('click',()=>{ adminPanel.classList.add('hidden'); });
+}
+if(pendingList){
+  pendingList.addEventListener('click',(e)=>{
+    const ap=e.target.getAttribute('data-approve'); const rj=e.target.getAttribute('data-reject');
+    if(!ap&&!rj) return;
+    const orgs=getOrgs(); const id=ap||rj; const idx=orgs.findIndex(o=>o.id===id); if(idx===-1) return;
+    orgs[idx].estado=ap?'aprobada':'rechazada'; orgs[idx].updatedAt=new Date().toISOString();
+    setOrgs(orgs); renderPending();
+    alert(`Organización ${ap?'APROBADA':'RECHAZADA'}: ${orgs[idx].razon}`);
+  });
 }
