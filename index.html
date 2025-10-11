@@ -11,20 +11,33 @@
   <header class="topbar">
     <div class="wrap topwrap">
       <div class="brand-left">
-        <div class="brand-title">Facsimil</div>
+        <div class="brand-title">Facsimil Autoevaluación</div>
       </div>
       <div class="rightblock">
         <div class="right-row">
-          <!-- Campanita -->
-          <button class="bell" title="Notificaciones">
+          <button class="bell" title="Notificaciones" aria-label="Notificaciones">
             <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
               <path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 0 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0a3 3 0 0 1-6 0"
                     fill="none" stroke="currentColor" stroke-width="2"/>
             </svg>
           </button>
 
+          <!-- Toggle Tema -->
+          <button id="themeToggle" class="btn tiny outline theme-toggle" type="button" title="Cambiar tema">
+            <svg class="icon sun" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 1v3M12 20v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M1 12h3M20 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"
+                    fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <svg class="icon moon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                    fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+            <span>Tema</span>
+          </button>
+
           <!-- Chip USER -->
-          <div class="userchip">
+          <div class="userchip" aria-label="Usuario">
             <span class="user-dot"></span>
             <span class="user-label" id="topUserLabel">USER</span>
             <svg class="caret" viewBox="0 0 24 24" aria-hidden="true">
@@ -32,11 +45,8 @@
             </svg>
           </div>
 
-          <!-- Cerrar sesión -->
-          <button id="logoutBtn" class="btn tiny outline" style="display:none">Cerrar sesión</button>
+          <button id="logoutBtn" class="btn tiny outline" style="display:none" type="button">Cerrar sesión</button>
         </div>
-
-        <!-- Nombre organización -->
         <div class="orgname" id="topOrgName">Organización Comunitaria</div>
       </div>
     </div>
@@ -48,21 +58,18 @@
     <aside class="sidebar">
       <div class="sidebar-header">
         <div class="welcome">Bienvenido</div>
-        <!-- Avatar/Uploader futuro -->
         <label class="avatar-uploader" title="Subir foto de usuario">
           <input type="file" id="avatarInput" accept="image/*" hidden />
           <div class="avatar-lg" id="avatarPreview" aria-label="Avatar de usuario"></div>
         </label>
       </div>
 
-      <!-- HOME -->
       <h3>Home</h3>
       <nav class="nav">
         <a href="#" class="active">Principal</a>
         <a href="#">Home</a>
       </nav>
 
-      <!-- USUARIOS -->
       <h3>Usuarios</h3>
       <nav class="nav">
         <a href="#">Usuarios</a>
@@ -71,14 +78,14 @@
       </nav>
     </aside>
 
-    <!-- ===== AUTH GATE (DEMO sin backend) ===== -->
+    <!-- ===== AUTH ===== -->
     <section id="authGate" class="auth-gate" aria-live="polite">
       <div class="auth-card">
         <h2>Organizaciones Comunitarias</h2>
         <p class="muted">Inscribe tu organización o accede si ya fue aprobada.</p>
 
         <div class="auth-grid">
-          <!-- Inscribir organización -->
+          <!-- Registro -->
           <div class="auth-panel">
             <h3>Inscribir organización</h3>
             <form id="orgRegisterForm">
@@ -90,7 +97,6 @@
               <input id="dom_org" type="text" name="dom_org" required>
 
               <hr class="sep">
-
               <label for="rep_run">Representante legal — RUN</label>
               <input id="rep_run" type="text" name="rep_run" required>
               <label for="rep_nombre">Representante — Nombre</label>
@@ -99,7 +105,6 @@
               <input id="rep_dom" type="text" name="rep_dom" required>
 
               <hr class="sep">
-
               <label for="email">Usuario (owner) — Email</label>
               <input id="email" type="email" name="email" required>
               <label for="pass">Contraseña</label>
@@ -110,7 +115,7 @@
             <div class="help">Un administrador deberá aprobarla para poder acceder al formulario.</div>
           </div>
 
-          <!-- Ingresar -->
+          <!-- Login -->
           <div class="auth-panel">
             <h3>Ingresar</h3>
             <form id="loginForm">
@@ -123,7 +128,7 @@
             <div class="help">Solo organizaciones <b>aprobadas</b> pueden acceder.</div>
           </div>
 
-          <!-- Admin (DEMO) -->
+          <!-- Admin demo -->
           <div class="auth-panel">
             <h3>Admin (DEMO)</h3>
             <form id="adminForm">
@@ -131,11 +136,10 @@
               <input id="adminkey" type="password" name="adminkey" placeholder="admin123" required>
               <button type="submit" class="btn ghost wfull">Entrar</button>
             </form>
-
             <div id="adminPanel" class="admin-panel hidden">
               <div class="admin-head">
                 <strong>Pendientes</strong>
-                <button id="adminLogout" class="btn tiny">Salir</button>
+                <button id="adminLogout" class="btn tiny" type="button">Salir</button>
               </div>
               <div id="pendingList" class="pending-list muted">Sin pendientes…</div>
             </div>
@@ -143,65 +147,52 @@
         </div>
       </div>
     </section>
-    <!-- ===== /AUTH GATE ===== -->
 
     <!-- ===== MAIN APP ===== -->
     <main class="card" id="appMain" style="display:none">
-      <!-- Tabs dinámicos -->
       <div class="tabs" id="tabs"></div>
-
-      <!-- Mensajes de validación -->
       <div id="validationMessages" class="validation"></div>
-
-      <!-- Contenido dinámico -->
       <div id="content-area" class="panel"></div>
-
-      <!-- Controles originales (ocultos en CSS; los dejamos por fallback) -->
-      <div class="controls">
-        <div class="btns">
-          <button id="cancelBtn" class="btn ghost" type="button">Cancelar</button>
-          <button id="saveBtn" class="btn primary" type="button">Guardar</button>
-          <!-- Menú contextual original -->
-          <div id="saveMenu" class="save-menu" aria-hidden="true">
-            <button id="saveJson" class="menu-item" type="button">Guardar JSON</button>
-            <button id="exportCsv" class="menu-item" type="button">Exportar CSV</button>
-          </div>
-        </div>
-      </div>
     </main>
-    <!-- ===== /MAIN APP ===== -->
 
-    <!-- Dock flotante: puntaje + acciones -->
-    <div class="score-dock" id="scoreDock" aria-live="polite">
-      <div class="sd-title">Puntaje</div>
-      <div class="sd-score">
-        <span id="sdScore">0</span> / <span id="sdMax">0</span>
-      </div>
-      <div class="sd-level" id="sdLevel">-</div>
-      <div class="sd-bar"><span id="sdBar"></span></div>
+<!-- ===== Dock flotante ===== -->
+<div class="score-dock" id="scoreDock" aria-live="polite">
+  <button id="dockToggle" class="dock-toggle" type="button" aria-label="Colapsar/expandir"></button>
 
-      <!-- Acciones en el dock -->
-      <div class="sd-actions">
-        <button id="cancelBtnDock" class="btn ghost tiny" type="button">
-          <!-- ícono cancelar -->
-          <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-          Cancelar
-        </button>
-        <div class="savewrap">
-          <button id="saveBtnDock" class="btn primary tiny" type="button">
-            <!-- ícono guardar -->
-            <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2zM7 3v6h8V3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-            Guardar
-          </button>
-          <!-- Menú contextual del dock -->
-          <div id="saveMenuDock" class="save-menu" aria-hidden="true">
-            <button id="saveJsonDock" class="menu-item" type="button">Guardar JSON</button>
-            <button id="exportCsvDock" class="menu-item" type="button">Exportar CSV</button>
-          </div>
-        </div>
+  <div class="sd-title">Puntaje</div>
+
+  <div class="sd-score">
+    <span id="sdScore">0</span> / <span id="sdMax">0</span>
+    <span id="sdPct" class="sd-pct">0% completado</span>
+  </div>
+
+  <div class="sd-level" id="sdLevel">-</div>
+
+  <div class="sd-bar"><span id="sdBar"></span></div>
+
+  <div class="sd-actions">
+    <button id="cancelBtnDock" class="btn ghost tiny" type="button" title="Cancelar">
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+        <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      Cancelar
+    </button>
+
+    <div class="savewrap">
+      <button id="saveBtnDock" class="btn primary tiny" type="button" title="Guardar">
+        <svg viewBox="0 0 24 24" class="icon" aria-hidden="true">
+          <path d="M19 21H5a2 2 0 0 1-2-2V7l4-4h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2zM7 3v6h8V3" fill="none" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        Guardar
+      </button>
+
+      <div id="saveMenuDock" class="save-menu" aria-hidden="true">
+        <button id="saveJsonDock" class="menu-item" type="button">Guardar JSON</button>
+        <button id="exportCsvDock" class="menu-item" type="button">Exportar CSV</button>
       </div>
     </div>
-  </div> <!-- /layout -->
+  </div>
+</div>
 
   <script src="script.js"></script>
 </body>

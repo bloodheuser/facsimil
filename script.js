@@ -1,11 +1,13 @@
 /* =======================================================
-   DEMO MULTI-ORG / MULTI-USUARIO (sin backend por ahora)
+   DEMO MULTI-ORG / MULTI-USUARIO + TEMA + DOCK + PENDIENTES
+   (Sin backend por ahora — mantiene tu flujo actual)
    ======================================================= */
 const ADMIN_DEMO_KEY = 'admin123';
 
 const LS_ORGS = 'facsimil.orgs';
 const LS_SESSION = 'facsimil.session';
 const LS_ACTIVE_TAB = 'facsimil.activeTab';
+const LS_THEME = 'facsimil.theme'; // light | dark
 
 function lsGet(key, def){ try { return JSON.parse(localStorage.getItem(key)) ?? def; } catch { return def; } }
 function lsSet(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
@@ -126,43 +128,28 @@ const sections = [
    ======================================================= */
 const contentArea = document.getElementById('content-area');
 const validationMessages = document.getElementById('validationMessages');
-const saveMenu = document.getElementById('saveMenu');        // menú original (oculto visualmente)
-const saveBtn = document.getElementById('saveBtn');          // botón original (oculto)
-const cancelBtn = document.getElementById('cancelBtn');      // botón original (oculto)
 
 /* Dock elements */
 const saveMenuDock = document.getElementById('saveMenuDock');
 const saveBtnDock = document.getElementById('saveBtnDock');
 const cancelBtnDock = document.getElementById('cancelBtnDock');
+const dockToggle = document.getElementById('dockToggle');
 
 let totalQuestions = 0;
 let answers = {}; // key -> { value:0|1|null, evidence:string, files:[] }
 
+// Pendientes (para la hoja)
+let lastUnansweredItems = [];      // [{k, section, group, q}]
+let lastMissingEvidenceItems = []; // [{k, section, group, q}]
+
 /* =======================================================
-   HELPERS
+   HELPERS & TABS STATE
    ======================================================= */
 function keyFor(sectionKey, gi, ii){ return `${sectionKey}-${gi}-${ii}`; }
 function computeScore(){ return Object.values(answers).reduce((acc, v) => acc + (v.value === 1 ? 1 : 0), 0); }
+function computeAnsweredCount(){ return Object.values(answers).reduce((acc, v) => acc + ((v.value===0 || v.value===1) ? 1 : 0), 0); }
 
 function resetActiveTab(){ localStorage.removeItem(LS_ACTIVE_TAB); }
-function resetDock(){
-  const sdScore = document.getElementById('sdScore');
-  const sdMax   = document.getElementById('sdMax');
-  const sdLevel = document.getElementById('sdLevel');
-  const sdBar   = document.getElementById('sdBar');
-  if (sdScore) sdScore.textContent = '0';
-  if (sdMax)   sdMax.textContent   = '0';
-  if (sdLevel) sdLevel.textContent = '-';
-  if (sdBar)   sdBar.style.width   = '0%';
-}
-
-/* ===== Tabs dinámicos a partir de sections[] + ICONOS ===== */
-const TAB_ICONS = {
-  transparencia: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M10 14l2-2 2 2m-2-2V8"/></svg>`,
-  rendicion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg>`,
-  participacion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/></svg>`,
-  colaboracion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.18a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.18a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`
-};
 
 function getActiveTabKey() {
   const k = localStorage.getItem(LS_ACTIVE_TAB);
@@ -171,27 +158,84 @@ function getActiveTabKey() {
 }
 function setActiveTabKey(key) { localStorage.setItem(LS_ACTIVE_TAB, key); }
 
+function resetDock(){
+  const sdScore = document.getElementById('sdScore');
+  const sdMax   = document.getElementById('sdMax');
+  const sdLevel = document.getElementById('sdLevel');
+  const sdBar   = document.getElementById('sdBar');
+  const sdPct   = document.getElementById('sdPct');
+
+  if (sdScore) sdScore.textContent = '0';
+  if (sdMax)   sdMax.textContent   = totalQuestions.toString();
+  if (sdLevel) sdLevel.textContent = '-';
+  if (sdBar)   sdBar.style.width   = '0%';
+  if (sdPct){
+    sdPct.textContent = '0% completado';
+    sdPct.classList.remove('is-low','is-mid','is-high');
+    sdPct.classList.add('is-low');
+  }
+}
+
+/* ===== Tabs dinámicos a partir de sections[] + ICONOS ===== */
+const TAB_ICONS = {
+  transparencia: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M10 14l2-2 2 2m-2-2V8"/></svg>`,
+  rendicion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg>`,
+  participacion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/></svg>`,
+  colaboracion: `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1z"/></svg>`
+};
+
 function buildTabs() {
   const tabsWrap = document.getElementById('tabs');
   if (!tabsWrap) return;
   tabsWrap.innerHTML = '';
 
+  // ARIA tablist
+  tabsWrap.setAttribute('role','tablist');
+  tabsWrap.setAttribute('aria-label','Secciones del formulario');
+
   const activeKey = getActiveTabKey();
   sections.forEach((sec) => {
     const btn = document.createElement('button');
-    btn.className = 'tab' + (sec.key === activeKey ? ' active' : '');
+    const isActive = (sec.key === activeKey);
+
+    btn.className = 'tab' + (isActive ? ' active' : '');
     btn.setAttribute('data-tab', sec.key);
+
+    // Accesibilidad
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    btn.setAttribute('tabindex', isActive ? '0' : '-1');
+    btn.id = `tab-${sec.key}`;
+
     const icon = TAB_ICONS[sec.key] || '';
     btn.innerHTML = `${icon}<span>${sec.title}</span>`;
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#tabs .tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
-      setActiveTabKey(sec.key);
-      showSectionByActiveTab();
+
+    // Click clásico
+    btn.addEventListener('click', () => activateTab(sec.key));
+
+    // Enter/Espacio activan el tab
+    btn.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activateTab(sec.key);
+      }
     });
+
     tabsWrap.appendChild(btn);
   });
 }
+
+function activateTab(key){
+  setActiveTabKey(key);
+  document.querySelectorAll('#tabs .tab').forEach(t => {
+    const isThis = t.getAttribute('data-tab') === key;
+    t.classList.toggle('active', isThis);
+    t.setAttribute('aria-selected', isThis ? 'true' : 'false');
+    t.setAttribute('tabindex', isThis ? '0' : '-1');
+  });
+  showSectionByActiveTab();
+}
+
 
 /* =======================================================
    BUILD UI
@@ -247,6 +291,7 @@ function buildUI(){
         `;
 
         const wrap = document.createElement('div');
+        wrap.id = `item-${k}`; // para “Ir”
         wrap.appendChild(row); wrap.appendChild(filecol);
         gEl.appendChild(wrap);
 
@@ -285,38 +330,62 @@ function buildUI(){
 
   updateScore();
   showSectionByActiveTab();
+
+  // Asegura que Ver pendientes esté siempre en el menú
+  ensurePendingMenuItem();
 }
 
 /* =======================================================
    SCORE DOCK
    ======================================================= */
 function updateScore(){
-  const score = computeScore();
-  const sdScore = document.getElementById('sdScore');
-  const sdMax = document.getElementById('sdMax');
-  const sdLevel = document.getElementById('sdLevel');
-  const sdBar = document.getElementById('sdBar');
+  const score   = computeScore();           // cuenta “Sí”
+  const answered = computeAnsweredCount();  // cuenta “Sí” + “No”
 
-  if (sdScore){
-    sdScore.textContent = score;
-    sdMax.textContent = totalQuestions;
-    sdLevel.textContent = levelFromScore(score);
-    const pct = totalQuestions ? Math.round((score/totalQuestions)*100) : 0;
-    sdBar.style.width = pct+'%';
+  const sdScore = document.getElementById('sdScore');
+  const sdMax   = document.getElementById('sdMax');
+  const sdLevel = document.getElementById('sdLevel');
+  const sdBar   = document.getElementById('sdBar');
+  const sdPct   = document.getElementById('sdPct');
+
+  if (!sdScore) return;
+
+  sdScore.textContent = score;
+  sdMax.textContent   = totalQuestions;
+  sdLevel.textContent = levelFromScore(score);
+
+  const completedPct = totalQuestions ? Math.round((answered/totalQuestions)*100) : 0;
+  if (sdBar) sdBar.style.width = completedPct + '%';
+
+  if (sdPct){
+    sdPct.textContent = `${completedPct}% completado`;
+    sdPct.classList.remove('is-low','is-mid','is-high');
+    sdPct.classList.add(classForPctCompleted(completedPct));
   }
 }
+
 function levelFromScore(score){
   if(score <= 12) return 'Nivel Inicial';
   if(score <= 24) return 'Nivel Intermedio';
   return 'Nivel Avanzado (Reconocimiento Público)';
 }
+function classForPctCompleted(pct){
+  if (pct < 34) return 'is-low';
+  if (pct < 67) return 'is-mid';
+  return 'is-high';
+}
 
 /* =======================================================
-   VALIDATION
+   VALIDATION (guarda pendientes para la hoja)
    ======================================================= */
 function runValidation(){
   validationMessages.innerHTML = '';
   let unanswered = 0, missingEvidence = 0;
+
+  lastUnansweredItems = [];
+  lastMissingEvidenceItems = [];
+
+  // limpiar marcas
   document.querySelectorAll('.group').forEach(g => g.classList.remove('warn'));
 
   sections.forEach((section)=>{
@@ -325,11 +394,18 @@ function runValidation(){
       g.items.forEach((it, ii)=>{
         const k = keyFor(section.key, gi, ii);
         const v = answers[k] || {};
-        if(v.value !== 0 && v.value !== 1){ unanswered++; groupHasUnanswered = true; }
-        if(v.value === 1 && (!v.evidence || v.evidence.trim()==='')){ missingEvidence++; }
+        const isAnswered = (v.value === 0 || v.value === 1);
+
+        if(!isAnswered){
+          unanswered++; groupHasUnanswered = true;
+          lastUnansweredItems.push({ k, section: section.title, group: g.group, q: it.q });
+        }
+        if(v.value === 1 && (!v.evidence || v.evidence.trim()==='')){
+          missingEvidence++;
+          lastMissingEvidenceItems.push({ k, section: section.title, group: g.group, q: it.q });
+        }
       });
       if(groupHasUnanswered){
-        // marca el grupo por título
         document.querySelectorAll('.group').forEach(gr => {
           if (gr.querySelector('h3')?.textContent === g.group) gr.classList.add('warn');
         });
@@ -343,6 +419,8 @@ function runValidation(){
     if(unanswered > 0) parts.push(`Hay ${unanswered} pregunta(s) sin responder. Selecciona “Sí” o “No”.`);
     if(missingEvidence > 0) parts.push(`Hay ${missingEvidence} respuesta(s) “Sí” sin evidencia.`);
     validationMessages.textContent = parts.join(' ');
+
+    ensurePendingMenuItem();
     return false;
   } else {
     validationMessages.style.color = '#065f46';
@@ -352,52 +430,136 @@ function runValidation(){
 }
 
 /* =======================================================
-   EXPORT JSON / CSV
+   MENÚ DOCK: botón "Ver pendientes" siempre y hoja
    ======================================================= */
-function saveJSON(){
-  const payload = {
-    generatedAt: new Date().toISOString(),
-    totalQuestions,
-    summary: {
-      score: computeScore(),
-      level: levelFromScore(computeScore())
-    },
-    answers: {}
-  };
-  for(const [k,v] of Object.entries(answers)){
-    payload.answers[k] = { value: v.value, evidence: v.evidence || '', files: v.files || [] };
-  }
-  const blob = new Blob([JSON.stringify(payload,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'autoevaluacion_facsimil.json'; a.click();
-  URL.revokeObjectURL(url);
-}
-function exportCSV(){
-  const header = ['item','seccion','grupo','pregunta','respuesta','evidencia','archivos'];
-  const lines = [header.join(',')];
-  sections.forEach(section=>{
-    section.groups.forEach((g,gi)=>{
-      g.items.forEach((it,ii)=>{
-        const k = keyFor(section.key, gi, ii);
-        const a = answers[k] || {};
-        const row = [
-          `"${k}"`,
-          `"${section.title}"`,
-          `"${g.group}"`,
-          `"${it.q.replace(/"/g,'""')}"`,
-          (a.value===1 ? 'Si' : a.value===0 ? 'No' : ''),
-          `"${(a.evidence||'').replace(/"/g,'""')}"`,
-          `"${(a.files||[]).join(';').replace(/"/g,'""')}"`,
-        ];
-        lines.push(row.join(','));
-      });
-    });
+function ensurePendingMenuItem(){
+  const menu = document.getElementById('saveMenuDock');
+  if(!menu) return;
+
+  // si ya existe, no lo duplicamos
+  if(menu.querySelector('#viewPendingDock')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'viewPendingDock';
+  btn.type = 'button';
+  btn.className = 'menu-item';
+  btn.textContent = 'Ver pendientes';
+  btn.addEventListener('click', () => {
+    openPendingSheet();
+    menu.classList.remove('open');
   });
-  const csv = lines.join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'autoevaluacion_facsimil.csv'; a.click();
-  URL.revokeObjectURL(url);
+  menu.appendChild(btn);
+}
+
+// elementos globales para hoja y backdrop
+let sheetEscHandler = null;
+
+function openPendingSheet(){
+  const hasAny = (lastUnansweredItems.length + lastMissingEvidenceItems.length) > 0;
+
+  let sheet = document.getElementById('dockSheet');
+  if(!sheet){
+    sheet = document.createElement('div');
+    sheet.id = 'dockSheet';
+    sheet.className = 'dock-sheet ps-sheet'; // añadimos clase ps-* sin romper las actuales
+    sheet.setAttribute('role','dialog');
+    sheet.setAttribute('aria-modal','true');
+    document.body.appendChild(sheet);
+  }
+
+  // Backdrop clicable (ps-*)
+  let backdrop = document.getElementById('dockSheetBackdrop');
+  if(!backdrop){
+    backdrop = document.createElement('div');
+    backdrop.id = 'dockSheetBackdrop';
+    backdrop.className = 'ps-backdrop';
+    backdrop.addEventListener('click', closePendingSheet);
+    document.body.appendChild(backdrop);
+  }
+
+  const mkList = (arr) => arr.map(it => `
+    <li>
+      <span class="val-path">[${it.section} › ${it.group}]</span>
+      <span class="val-q">${it.q}</span>
+      <button class="link-jump" data-jump="${it.k}" type="button">Ir</button>
+    </li>
+  `).join('');
+
+  sheet.innerHTML = `
+    <div class="ds-head ps-head">
+      <strong id="psTitle" class="ps-title">Pendientes</strong>
+      <button class="ds-close ps-close" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <div class="ds-body ps-body" aria-labelledby="psTitle">
+      ${
+        hasAny ? `
+        ${lastUnansweredItems.length ? `
+          <h4 class="val-h">Sin responder (${lastUnansweredItems.length})</h4>
+          <ul class="val-list">${mkList(lastUnansweredItems)}</ul>
+        ` : ''}
+
+        ${lastMissingEvidenceItems.length ? `
+          <h4 class="val-h">“Sí” sin evidencia (${lastMissingEvidenceItems.length})</h4>
+          <ul class="val-list">${mkList(lastMissingEvidenceItems)}</ul>
+        ` : ''}
+        ` : `
+        <div class="val-summary ok">No hay pendientes 🎉</div>
+        `
+      }
+    </div>
+  `;
+
+  sheet.classList.add('open');
+  backdrop.classList.add('open');
+
+  const closeBtn = sheet.querySelector('.ds-close');
+  closeBtn.onclick = closePendingSheet;
+
+  // delegar “Ir”
+  sheet.addEventListener('click', (e) => {
+    const btn = e.target.closest('.link-jump');
+    if(!btn) return;
+    const key = btn.getAttribute('data-jump');
+    if(!key) return;
+
+    const sectionKey = key.split('-')[0];
+    if (sectionKey){
+      setActiveTabKey(sectionKey);
+      showSectionByActiveTab();
+      document.querySelectorAll('#tabs .tab').forEach(t => {
+        const k = t.getAttribute('data-tab');
+        if (k === sectionKey) t.classList.add('active');
+        else t.classList.remove('active');
+      });
+    }
+
+    const target = document.getElementById(`item-${key}`);
+    if (target){
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      target.classList.add('pulse');
+      setTimeout(()=> target.classList.remove('pulse'), 1200);
+    }
+  }, { once:false });
+
+  // Cierre por ESC
+  sheetEscHandler = (ev)=>{
+    if(ev.key === 'Escape'){ closePendingSheet(); }
+  };
+  document.addEventListener('keydown', sheetEscHandler, { passive:true });
+
+  // foco accesible al abrir
+  closeBtn.focus();
+}
+
+function closePendingSheet(){
+  const sheet = document.getElementById('dockSheet');
+  const backdrop = document.getElementById('dockSheetBackdrop');
+  if (sheet) sheet.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+  if (sheetEscHandler){
+    document.removeEventListener('keydown', sheetEscHandler);
+    sheetEscHandler = null;
+  }
 }
 
 /* =======================================================
@@ -409,13 +571,10 @@ function resetAll(){
   buildTabs();
   buildUI();
   if (validationMessages) validationMessages.textContent = '';
-  if (saveMenu) saveMenu.classList.remove('open');
   if (saveMenuDock) saveMenuDock.classList.remove('open');
   resetDock();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-
-function setupTabs(){ /* listeners ya se crean en buildTabs() */ }
 
 function showSectionByActiveTab(){
   const wraps = document.querySelectorAll('.section-wrap');
@@ -458,7 +617,6 @@ function showApp(){
   if (!localStorage.getItem(LS_ACTIVE_TAB) && sections[0]) setActiveTabKey(sections[0].key);
   buildTabs();
   buildUI();
-  setupTabs();
   refreshTopbarUser();
 }
 function showGate(){
@@ -470,13 +628,9 @@ function checkSessionAndRender(){
   const org = currentApprovedOrg();
   if(org){ showApp(); } else { showGate(); }
 }
-document.addEventListener('DOMContentLoaded', ()=>{
-  checkSessionAndRender();
-  refreshTopbarUser();
-});
 
 /* =======================================================
-   BOTONES: Guardar/Cancelar (originales + DOCK)
+   BOTONES: Guardar/Cancelar (DOCK)
    ======================================================= */
 function onCancel(){
   if(confirm('¿Cancelar y limpiar el formulario?')) resetAll();
@@ -485,42 +639,197 @@ function onSaveClick(menuEl){
   const ok = runValidation();
   if(!ok){
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    showSaveIndicator('fail');
+
+    // menú y hoja con pendientes
+    ensurePendingMenuItem();
+    if (menuEl){
+      menuEl.classList.add('open');
+      menuEl.setAttribute('aria-hidden', false);
+    }
+    openPendingSheet();
+
+    setTimeout(()=> hideSaveIndicator(), 2000);
     return;
   }
-  // Toggle del menú asociado (puede ser el original o el del dock)
+  // OK: toggle del menú normal
   if (!menuEl) return;
   menuEl.classList.toggle('open');
   menuEl.setAttribute('aria-hidden', !menuEl.classList.contains('open'));
 }
 
-/* Originales (ocultos, pero funcionales) */
-if (cancelBtn) cancelBtn.addEventListener('click', onCancel);
-if (saveBtn) saveBtn.addEventListener('click', ()=> onSaveClick(saveMenu));
-if (document.getElementById('saveJson'))
-  document.getElementById('saveJson').addEventListener('click', ()=>{ saveJSON(); saveMenu.classList.remove('open'); });
-if (document.getElementById('exportCsv'))
-  document.getElementById('exportCsv').addEventListener('click', ()=>{ exportCSV(); saveMenu.classList.remove('open'); });
-
-/* Dock */
+/* Dock listeners */
 if (cancelBtnDock) cancelBtnDock.addEventListener('click', onCancel);
 if (saveBtnDock) saveBtnDock.addEventListener('click', ()=> onSaveClick(saveMenuDock));
+
+// Guardar JSON (agregamos implementación)
 if (document.getElementById('saveJsonDock'))
-  document.getElementById('saveJsonDock').addEventListener('click', ()=>{ saveJSON(); saveMenuDock.classList.remove('open'); });
+  document.getElementById('saveJsonDock').addEventListener('click', ()=>{
+    showSaveIndicator('saving');
+    setTimeout(()=>{
+      saveJSON(); // <== ahora existe
+      showSaveIndicator('fail'); // falla intencional (hasta backend real)
+      setTimeout(()=> hideSaveIndicator(), 2500);
+    }, 800);
+    saveMenuDock.classList.remove('open');
+  });
+
+// Exportar CSV (agregamos implementación)
 if (document.getElementById('exportCsvDock'))
-  document.getElementById('exportCsvDock').addEventListener('click', ()=>{ exportCSV(); saveMenuDock.classList.remove('open'); });
+  document.getElementById('exportCsvDock').addEventListener('click', ()=>{
+    showSaveIndicator('saving');
+    setTimeout(()=>{
+      exportCSV(); // <== ahora existe
+      showSaveIndicator('fail'); // falla intencional (hasta backend real)
+      setTimeout(()=> hideSaveIndicator(), 2500);
+    }, 800);
+    saveMenuDock.classList.remove('open');
+  });
 
-/* Cerrar menús al clickear fuera (aplica a ambos) */
+/* Cerrar menú del dock al click fuera */
 document.addEventListener('click', (e)=>{
-  const clickInsideAnyMenu =
-    (saveMenu && saveMenu.contains(e.target)) ||
-    (saveMenuDock && saveMenuDock.contains(e.target)) ||
-    (e.target === saveBtn) || (e.target === saveBtnDock);
-
-  if (!clickInsideAnyMenu){
-    if (saveMenu) saveMenu.classList.remove('open');
-    if (saveMenuDock) saveMenuDock.classList.remove('open');
-  }
+  const clickInsideMenu = saveMenuDock?.contains(e.target);
+  const isSaveBtn = e.target === saveBtnDock || saveBtnDock?.contains(e.target);
+  if (!clickInsideMenu && !isSaveBtn) saveMenuDock?.classList.remove('open');
 });
+
+/* Dock toggle (colapsar/expandir) con animación y aria-pressed */
+if (dockToggle){
+  dockToggle.setAttribute('aria-pressed','false');
+  dockToggle.addEventListener('click', ()=>{
+    const dock = document.getElementById('scoreDock');
+    if(!dock) return;
+    const collapsingClass = dock.classList.contains('collapsed') ? 'collapsing-open' : 'collapsing-close';
+    dock.classList.add(collapsingClass);
+
+    const isCollapsed = dock.classList.toggle('collapsed');
+    dockToggle.setAttribute('aria-pressed', isCollapsed ? 'true' : 'false');
+
+    // quitar clase de animación al terminar
+    setTimeout(()=> dock.classList.remove(collapsingClass), 220);
+  });
+}
+
+/* =======================================================
+   THEME TOGGLE (light/dark)
+   ======================================================= */
+function applyTheme(theme){
+  const t = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', t);
+  lsSet(LS_THEME, t);
+}
+function initTheme(){
+  const saved = lsGet(LS_THEME, null);
+  if (saved){ applyTheme(saved); return; }
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark ? 'dark' : 'light');
+}
+const themeToggleBtn = document.getElementById('themeToggle');
+if (themeToggleBtn){
+  themeToggleBtn.addEventListener('click', ()=>{
+    const now = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(now);
+  });
+}
+
+/* =======================================================
+   SAVE INDICATOR (en el dock)
+   estados: 'saving' | 'fail'
+   ======================================================= */
+function ensureSaveIndicatorEl(){
+  let el = document.getElementById('saveIndicator');
+  if (!el){
+    el = document.createElement('div');
+    el.id = 'saveIndicator';
+    el.innerHTML = `
+      <svg viewBox="0 0 24 24" class="icon" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" class="spinner"/></svg>
+      <span class="label">Guardando…</span>
+    `;
+    document.getElementById('scoreDock')?.appendChild(el);
+  }
+  return el;
+}
+function showSaveIndicator(state){
+  const el = ensureSaveIndicatorEl();
+  const label = el.querySelector('.label');
+
+  el.classList.add('show');
+
+  if (state === 'saving'){
+    label.textContent = 'Guardando…';
+  } else if (state === 'fail'){
+    label.textContent = 'Guardado falló (configurar backend)';
+  }
+}
+function hideSaveIndicator(){
+  const el = document.getElementById('saveIndicator');
+  if (el) el.classList.remove('show');
+}
+
+/* =======================================================
+   EXPORTADORES (JSON / CSV) — DEMO local
+   ======================================================= */
+function flattenRows(){
+  const rows = [];
+  sections.forEach((section, gi0)=>{
+    section.groups.forEach((g, gi)=>{
+      g.items.forEach((it, ii)=>{
+        const k = keyFor(section.key, gi, ii);
+        const v = answers[k] || {};
+        rows.push({
+          sectionKey: section.key,
+          section: section.title,
+          group: g.group,
+          question: it.q,
+          answer: (v.value===1 ? 'Sí' : (v.value===0 ? 'No' : '')),
+          evidence: v.evidence || '',
+          files: (v.files||[]).join('; ')
+        });
+      });
+    });
+  });
+  return rows;
+}
+
+function downloadBlob(filename, mime, content){
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  a.remove();
+}
+
+function saveJSON(){
+  const org = currentApprovedOrg();
+  const payload = {
+    meta: {
+      exportedAt: new Date().toISOString(),
+      totalQuestions,
+      score: computeScore(),
+      answered: computeAnsweredCount(),
+      org: org ? { id: org.id, razon: org.razon, rut: org.rut } : null,
+      user: getSession()?.email || null
+    },
+    answers,                 // mapa crudo
+    rows: flattenRows()      // plano útil para backend/planillas
+  };
+  downloadBlob('facsimil_respuestas.json', 'application/json;charset=utf-8', JSON.stringify(payload, null, 2));
+}
+
+function exportCSV(){
+  const rows = flattenRows();
+  const headers = ['Sección','Grupo','Pregunta','Respuesta','Evidencia','Archivos'];
+  const csv = [
+    '\uFEFF' + headers.join(','), // BOM + cabecera
+    ...rows.map(r => [
+      r.section, r.group, r.question, r.answer, r.evidence, r.files
+    ].map(val => `"${String(val).replace(/"/g,'""')}"`).join(','))
+  ].join('\r\n');
+  downloadBlob('facsimil_respuestas.csv', 'text/csv;charset=utf-8', csv);
+}
 
 /* =======================================================
    CERRAR SESIÓN
@@ -535,7 +844,6 @@ if (logoutBtnEl){
 
     answers = {};
     if (validationMessages) validationMessages.textContent = '';
-    if (saveMenu) saveMenu.classList.remove('open');
     if (saveMenuDock) saveMenuDock.classList.remove('open');
 
     const tabsWrap = document.getElementById('tabs');
@@ -629,3 +937,15 @@ if(pendingList){
     alert(`Organización ${ap?'APROBADA':'RECHAZADA'}: ${orgs[idx].razon}`);
   });
 }
+
+/* =======================================================
+   INIT
+   ======================================================= */
+document.addEventListener('DOMContentLoaded', ()=>{
+  initTheme();
+  // el dock existe siempre: deja el botón “Ver pendientes” fijo
+  ensurePendingMenuItem();
+
+  checkSessionAndRender();
+  refreshTopbarUser();
+});
