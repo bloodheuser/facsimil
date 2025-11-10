@@ -1359,6 +1359,87 @@ document.addEventListener('DOMContentLoaded', ()=>{
     });
     const langLabel = document.getElementById('langLabel');
     if (langLabel) langLabel.textContent = getLang().toUpperCase();
+    // ===== AUTH TABS (Login / Registro / Admin)
+function authSetActive(tab){
+  const tabs = [
+    {btn: 'tabLogin', pane: 'paneLogin'},
+    {btn: 'tabRegister', pane: 'paneRegister'},
+    {btn: 'tabAdmin', pane: 'paneAdmin'},
+  ];
+  tabs.forEach(t=>{
+    const b = document.getElementById(t.btn);
+    const p = document.getElementById(t.pane);
+    if(!b || !p) return;
+    const is = (t.btn === tab);
+    b.classList.toggle('active', is);
+    b.setAttribute('aria-selected', is ? 'true' : 'false');
+    p.classList.toggle('active', is);
+  });
+}
+
+document.getElementById('tabLogin')?.addEventListener('click', ()=>authSetActive('tabLogin'));
+document.getElementById('tabRegister')?.addEventListener('click', ()=>authSetActive('tabRegister'));
+document.getElementById('tabAdmin')?.addEventListener('click', ()=>authSetActive('tabAdmin'));
+// ===== ADMIN DEMO PREDEFINIDO
+const DEMO_ADMIN_EMAIL = 'admin@demo.cl';
+const DEMO_ADMIN_PASS  = 'Admin123!';
+
+const adminFormRevamp = document.getElementById('adminFormRevamp');
+const adminPanelRevamp = document.getElementById('adminPanelRevamp');
+const adminLogoutRevamp = document.getElementById('adminLogoutRevamp');
+const pendingListRevamp = document.getElementById('pendingListRevamp');
+
+function renderPendingRevamp(){
+  const orgs = getOrgs();
+  const pend = orgs.filter(o=>o.estado==='pendiente');
+  if (!pend.length){
+    pendingListRevamp.innerHTML = 'Sin pendientes…';
+    return;
+  }
+  pendingListRevamp.innerHTML = pend.map(o=>`
+    <div class="pending-item">
+      <div><b>${o.razon}</b> — RUT: ${o.rut}</div>
+      <div class="muted">Rep: ${o.representante?.nombre || '-'} (${o.representante?.run || '-'})</div>
+      <div class="pending-actions">
+        <button class="btn tiny success" data-approve="${o.id}">Aprobar</button>
+        <button class="btn tiny danger" data-reject="${o.id}">Rechazar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+adminFormRevamp?.addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const fd = new FormData(adminFormRevamp);
+  const email = (fd.get('adminEmail')||'').trim().toLowerCase();
+  const pass  = fd.get('adminPass')||'';
+  if (email===DEMO_ADMIN_EMAIL && pass===DEMO_ADMIN_PASS){
+    adminPanelRevamp.classList.remove('hidden');
+    renderPendingRevamp();
+  } else {
+    alert('Credenciales admin inválidas (usa admin@demo.cl / Admin123!)');
+  }
+});
+
+adminLogoutRevamp?.addEventListener('click', ()=>{
+  adminPanelRevamp.classList.add('hidden');
+});
+
+pendingListRevamp?.addEventListener('click', (e)=>{
+  const ap = e.target.getAttribute('data-approve');
+  const rj = e.target.getAttribute('data-reject');
+  if (!ap && !rj) return;
+  const orgs = getOrgs();
+  const id = ap || rj;
+  const idx = orgs.findIndex(o=>o.id===id);
+  if (idx === -1) return;
+  orgs[idx].estado = ap ? 'aprobada' : 'rechazada';
+  orgs[idx].updatedAt = new Date().toISOString();
+  setOrgs(orgs);
+  renderPendingRevamp();
+  alert(`Organización ${ap?'APROBADA':'RECHAZADA'}: ${orgs[idx].razon}`);
+});
+
   }
 
   initTheme();

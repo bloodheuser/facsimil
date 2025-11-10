@@ -909,3 +909,46 @@ body.modal-open {
   padding:6px 10px; border-radius:10px; cursor:pointer;
   min-width:44px; justify-content:center;
 }
+/* ===== AUTH REVAMP ===== */
+.auth-revamp { padding: 18px; }
+.auth-head { display:flex; flex-direction:column; gap:6px; }
+.seg {
+  display:inline-flex; gap:6px; background:var(--soft);
+  padding:6px; border-radius:14px; border:1px solid var(--border);
+  margin-top:6px;
+}
+.seg-btn{
+  border:none; background:transparent; padding:8px 14px; border-radius:10px;
+  font-weight:800; cursor:pointer; color:var(--ink);
+}
+.seg-btn.active{ background:#fff; box-shadow: var(--shadow); }
+
+.auth-panes { margin-top:12px; }
+.pane { display:none; }
+.pane.active { display:block; }
+
+.grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+.grid-3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+@media (max-width: 760px){
+  .grid-2, .grid-3{ grid-template-columns: 1fr; }
+}
+
+/* Refuerzo visual en auth-panel */
+.auth-panel{
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+:root[data-theme="dark"] .auth-panel{
+  background:#0b1220; border-color:#273244;
+}
+.auth-panel h3{ margin-top:0; }
+.auth-panel form{ display:grid; gap:10px; }
+.auth-panel input{
+  padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
+  background: #fff; color: var(--ink);
+}
+:root[data-theme="dark"] .auth-panel input{
+  background:#0f172a; border-color:#273244; color:#e5e7eb;
+}

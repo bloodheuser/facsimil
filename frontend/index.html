@@ -83,75 +83,125 @@
       </nav>
     </aside>
 
-    <!-- ===== AUTH ===== -->
-    <section id="authGate" class="auth-gate" aria-live="polite">
-      <div class="auth-card">
-        <h2>Organizaciones Comunitarias</h2>
-        <p class="muted">Inscribe tu organización o accede si ya fue aprobada.</p>
+<!-- ===== AUTH (REVAMP) ===== -->
+<section id="authGate" class="auth-gate" aria-live="polite">
+  <div class="auth-card auth-revamp">
+    <div class="auth-head">
+      <h2>Organizaciones Comunitarias</h2>
+      <p class="muted">Crea tu organización, inicia sesión o entra como administrador.</p>
 
-        <div class="auth-grid">
-          <!-- Registro -->
-          <div class="auth-panel">
-            <h3>Inscribir organización</h3>
-            <form id="orgRegisterForm">
-              <label for="razon">Razón social</label>
-              <input id="razon" type="text" name="razon" required>
-              <label for="rut">RUT organización</label>
-              <input id="rut" type="text" name="rut" required>
-              <label for="dom_org">Domicilio organización</label>
-              <input id="dom_org" type="text" name="dom_org" required>
+      <!-- Segmented control -->
+      <div class="seg">
+        <button id="tabLogin" class="seg-btn active" type="button" aria-controls="paneLogin" aria-selected="true">Login</button>
+        <button id="tabRegister" class="seg-btn" type="button" aria-controls="paneRegister" aria-selected="false">Registro</button>
+        <button id="tabAdmin" class="seg-btn" type="button" aria-controls="paneAdmin" aria-selected="false">Admin</button>
+      </div>
+    </div>
 
-              <hr class="sep">
-              <label for="rep_run">Representante legal — RUN</label>
-              <input id="rep_run" type="text" name="rep_run" required>
-              <label for="rep_nombre">Representante — Nombre</label>
-              <input id="rep_nombre" type="text" name="rep_nombre" required>
-              <label for="rep_dom">Representante — Domicilio</label>
-              <input id="rep_dom" type="text" name="rep_dom" required>
-
-              <hr class="sep">
-              <label for="email">Usuario (owner) — Email</label>
-              <input id="email" type="email" name="email" required>
-              <label for="pass">Contraseña</label>
-              <input id="pass" type="password" name="pass" required>
-
-              <button type="submit" class="btn primary wfull">Inscribir (pendiente)</button>
-            </form>
-            <div class="help">Un administrador deberá aprobarla para poder acceder al formulario.</div>
-          </div>
-
-          <!-- Login -->
-          <div class="auth-panel">
-            <h3>Ingresar</h3>
-            <form id="loginForm">
-              <label for="login_email">Email</label>
-              <input id="login_email" type="email" name="email" required>
-              <label for="login_pass">Contraseña</label>
-              <input id="login_pass" type="password" name="pass" required>
-              <button type="submit" class="btn primary wfull">Entrar</button>
-            </form>
-            <div class="help">Solo organizaciones <b>aprobadas</b> pueden acceder.</div>
-          </div>
-
-          <!-- Admin demo -->
-          <div class="auth-panel">
-            <h3>Admin (DEMO)</h3>
-            <form id="adminForm">
-              <label for="adminkey">Clave admin demo</label>
-              <input id="adminkey" type="password" name="adminkey" placeholder="admin123" required>
-              <button type="submit" class="btn ghost wfull">Entrar</button>
-            </form>
-            <div id="adminPanel" class="admin-panel hidden">
-              <div class="admin-head">
-                <strong>Pendientes</strong>
-                <button id="adminLogout" class="btn tiny" type="button">Salir</button>
-              </div>
-              <div id="pendingList" class="pending-list muted">Sin pendientes…</div>
-            </div>
-          </div>
+    <div class="auth-panes">
+      <!-- LOGIN -->
+      <div id="paneLogin" class="pane active" role="tabpanel" aria-labelledby="tabLogin">
+        <div class="auth-panel">
+          <h3>Ingresar</h3>
+          <form id="loginForm">
+            <label for="login_email">Email</label>
+            <input id="login_email" type="email" name="email" placeholder="tucorreo@dominio.cl" required>
+            <label for="login_pass">Contraseña</label>
+            <input id="login_pass" type="password" name="pass" placeholder="********" required>
+            <button type="submit" class="btn primary wfull">Entrar</button>
+          </form>
+          <div class="help">Solo organizaciones <b>aprobadas</b> pueden acceder.</div>
         </div>
       </div>
-    </section>
+
+      <!-- REGISTRO -->
+      <div id="paneRegister" class="pane" role="tabpanel" aria-labelledby="tabRegister">
+        <div class="auth-panel">
+          <h3>Inscribir organización</h3>
+          <form id="orgRegisterForm">
+            <div class="grid-2">
+              <div>
+                <label for="razon">Razón social</label>
+                <input id="razon" type="text" name="razon" required>
+              </div>
+              <div>
+                <label for="rut">RUT organización</label>
+                <input id="rut" type="text" name="rut" required>
+              </div>
+            </div>
+
+            <label for="dom_org">Domicilio organización</label>
+            <input id="dom_org" type="text" name="dom_org" required>
+
+            <hr class="sep">
+
+            <div class="grid-3">
+              <div>
+                <label for="rep_run">RUN representante</label>
+                <input id="rep_run" type="text" name="rep_run" required>
+              </div>
+              <div>
+                <label for="rep_nombre">Nombre representante</label>
+                <input id="rep_nombre" type="text" name="rep_nombre" required>
+              </div>
+              <div>
+                <label for="rep_dom">Domicilio representante</label>
+                <input id="rep_dom" type="text" name="rep_dom" required>
+              </div>
+            </div>
+
+            <hr class="sep">
+
+            <div class="grid-2">
+              <div>
+                <label for="email">Email (owner)</label>
+                <input id="email" type="email" name="email" required>
+              </div>
+              <div>
+                <label for="pass">Contraseña</label>
+                <input id="pass" type="password" name="pass" required>
+              </div>
+            </div>
+
+            <button type="submit" class="btn primary wfull">Inscribir (pendiente)</button>
+          </form>
+          <div class="help">Un administrador deberá aprobarla para poder acceder al formulario.</div>
+        </div>
+      </div>
+
+      <!-- ADMIN -->
+      <div id="paneAdmin" class="pane" role="tabpanel" aria-labelledby="tabAdmin">
+        <div class="auth-panel">
+          <h3>Admin</h3>
+          <form id="adminFormRevamp">
+            <div class="grid-2">
+              <div>
+                <label for="adminEmail">Email admin</label>
+                <input id="adminEmail" type="email" name="adminEmail" placeholder="admin@demo.cl" required>
+              </div>
+              <div>
+                <label for="adminPass">Password</label>
+                <input id="adminPass" type="password" name="adminPass" placeholder="Admin123!" required>
+              </div>
+            </div>
+            <button type="submit" class="btn ghost wfull">Entrar</button>
+          </form>
+
+          <!-- Panel pendientes -->
+          <div id="adminPanelRevamp" class="admin-panel hidden">
+            <div class="admin-head">
+              <strong>Pendientes de aprobación</strong>
+              <button id="adminLogoutRevamp" class="btn tiny" type="button">Salir</button>
+            </div>
+            <div id="pendingListRevamp" class="pending-list muted">Sin pendientes…</div>
+          </div>
+
+          <div class="help">Demo Admin predefinido: <b>admin@demo.cl</b> / <b>Admin123!</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
     <!-- ===== MAIN APP ===== -->
     <main class="card" id="appMain" style="display:none">
