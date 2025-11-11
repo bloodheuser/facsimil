@@ -952,3 +952,12 @@ body.modal-open {
 :root[data-theme="dark"] .auth-panel input{
   background:#0f172a; border-color:#273244; color:#e5e7eb;
 }
+/* Feedback de validación RUT */
+input.is-valid {
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34,197,94,.12);
+}
+input.is-invalid {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239,68,68,.12);
+}

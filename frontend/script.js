@@ -2,6 +2,88 @@
    DEMO MULTI-ORG / MULTI-USUARIO + TEMA + DOCK + PENDIENTES
    (Sin backend por ahora)
    ======================================================= */
+   // === RUT utils (frontend) ===
+function rutClean(str=''){
+  return (str || '').toString().trim().replace(/[.\s]/g,'').replace(/-/g,'').toLowerCase();
+}
+function rutSplit(str){
+  const clean = rutClean(str);
+  if(!clean) return { cuerpo:null, dv:null };
+  const cuerpo = clean.slice(0, -1);
+  const dv = clean.slice(-1);
+  if(!/^\d+$/.test(cuerpo) || !/^[0-9k]$/.test(dv)) return { cuerpo:null, dv:null };
+  return { cuerpo, dv };
+}
+function rutDV(cuerpoStr){
+  // Módulo 11
+  let num = parseInt(cuerpoStr,10);
+  if(!Number.isFinite(num)) return null;
+  let s=1, m=0;
+  while (num>0){
+    s = (s + (num % 10) * (9 - (m % 6))) % 11;
+    m++; num = Math.floor(num/10);
+  }
+  return (s===0) ? 'k' : String(s-1);
+}
+function rutIsValid(str){
+  const { cuerpo, dv } = rutSplit(str);
+  if(!cuerpo || !dv) return false;
+  return rutDV(cuerpo) === dv;
+}
+function rutFormat(str){
+  const { cuerpo, dv } = rutSplit(str);
+  if(!cuerpo || !dv) return '';
+  // agrega puntos cada 3 y guion final
+  let c = cuerpo.replace(/^0+/,'');
+  let out = '';
+  while (c.length > 3){
+    out = '.' + c.slice(-3) + out;
+    c = c.slice(0, -3);
+  }
+  out = c + out;
+  return `${out}-${dv}`;
+}
+
+// === Adjunta comportamiento a inputs con id "rut" y "rep_run" ===
+function attachRutBehavior(inputId){
+  const el = document.getElementById(inputId);
+  if(!el) return;
+  const errorId = `${inputId}-err`;
+  let err = document.getElementById(errorId);
+  if(!err){
+    err = document.createElement('div');
+    err.id = errorId;
+    err.style.fontSize = '12px';
+    err.style.color = '#b91c1c';
+    err.style.marginTop = '4px';
+    el.insertAdjacentElement('afterend', err);
+  }
+  el.setAttribute('inputmode','numeric');
+  el.setAttribute('autocomplete','off');
+  el.setAttribute('maxlength','12'); // “12.345.678-5”
+
+  el.addEventListener('input', () => {
+    const raw = rutClean(el.value);
+    const cuerpo = raw.slice(0, Math.max(0, raw.length - 1)).slice(-9); // hasta 9 dígitos
+    const dv = raw.slice(-1);
+    if(!cuerpo){ err.textContent = ''; return; }
+    if(!/^[0-9k]$/.test(dv)) { err.textContent = ''; el.value = rutFormat(cuerpo + (dv||'')); return; }
+    el.value = rutFormat(cuerpo + dv);
+    err.textContent = '';
+  });
+
+  el.addEventListener('blur', () => {
+    if(!el.value) { err.textContent = ''; return; }
+    if(!rutIsValid(el.value)){
+      err.textContent = 'RUT inválido. Revisa el dígito verificador.';
+      el.focus();
+    } else {
+      el.value = rutFormat(el.value);
+      err.textContent = '';
+    }
+  });
+}
+
 const ADMIN_DEMO_KEY = 'admin123';
 
 const LS_ORGS = 'facsimil.orgs';
@@ -228,6 +310,73 @@ function groupTitle(es){ return (getLang()==='en' ? (I18N_FORM_EN.groups[es] || 
 function qText(es){ return (getLang()==='en' ? (I18N_FORM_EN.q[es] || es) : es); }
 function evText(es){ return (getLang()==='en' ? (I18N_FORM_EN.ev[es] || es) : es); }
 function pctLabel(p){ return getLang()==='en' ? `${p}% completed` : `${p}% completado`; }
+
+// === RUT utils ===
+function limpiaRut(rut) {
+  return (rut || '')
+    .toString()
+    .replace(/[^0-9kK]/g, '')
+    .toUpperCase();
+}
+
+function formateaRut(rut) {
+  const limpio = limpiaRut(rut);
+  if (limpio.length === 0) return '';
+
+  const cuerpo = limpio.slice(0, -1);
+  const dv = limpio.slice(-1);
+
+  if (!cuerpo) return dv;
+
+  let invertido = cuerpo.split('').reverse().join('');
+  let conPuntos = invertido.replace(/(\d{3})(?=\d)/g, '$1.');
+  conPuntos = conPuntos.split('').reverse().join('');
+
+  return `${conPuntos}-${dv}`;
+}
+
+function calculaDV(cuerpo) {
+  let suma = 0, multiplo = 2;
+  for (let i = cuerpo.length - 1; i >= 0; i--) {
+    suma += parseInt(cuerpo[i], 10) * multiplo;
+    multiplo = (multiplo === 7) ? 2 : multiplo + 1;
+  }
+  const resto = 11 - (suma % 11);
+  if (resto === 11) return '0';
+  if (resto === 10) return 'K';
+  return String(resto);
+}
+
+function validaRut(rut) {
+  const limpio = limpiaRut(rut);
+  if (limpio.length < 2) return false;
+
+  const cuerpo = limpio.slice(0, -1);
+  const dv = limpio.slice(-1);
+  if (!/^\d{7,8}$/.test(cuerpo)) return false;
+
+  return calculaDV(cuerpo) === dv;
+}
+
+function wireRutInput(inputEl) {
+  if (!inputEl) return;
+
+  inputEl.addEventListener('input', () => {
+    const pos = inputEl.selectionStart;
+    const antes = inputEl.value;
+    inputEl.value = formateaRut(antes);
+    const delta = inputEl.value.length - antes.length;
+    const newPos = Math.max(0, (pos || 0) + delta);
+    inputEl.setSelectionRange(newPos, newPos);
+  });
+
+  inputEl.addEventListener('blur', () => {
+    const ok = validaRut(inputEl.value);
+    inputEl.dataset.valid = ok ? 'true' : 'false';
+    inputEl.classList.toggle('is-invalid', !ok);
+    inputEl.classList.toggle('is-valid', ok);
+  });
+}
 
 /* =======================================================
    SECCIONES DEL FORMULARIO (COMPLETO)
@@ -1339,6 +1488,9 @@ helpForm?.addEventListener('submit', (e)=>{
    INIT
    ======================================================= */
 document.addEventListener('DOMContentLoaded', ()=>{
+    attachRutBehavior('rut');      // RUT de la organización
+  attachRutBehavior('rep_run');  // RUN del representante
+
   // Idioma inicial
   setLang(getLang());
   updateHelpModalTexts();
